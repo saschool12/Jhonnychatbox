@@ -444,4 +444,55 @@ document.addEventListener("DOMContentLoaded", function() {
     themeToggle.addEventListener("click", function() {
         document.body.classList.toggle("light");
         themeToggle.classList.toggle("active");
-        localStorage.setItem("jhonnyTheme", document.body.classList.contains("light")
+        localStorage.setItem("jhonnyTheme", document.body.classList.contains("light") ? "light" : "dark");
+    });
+    if (localStorage.getItem("jhonnyTheme") === "light") {
+        document.body.classList.add("light");
+        themeToggle.classList.add("active");
+    }
+
+    enterToggle.addEventListener("click", function() {
+        enterToSend = !enterToSend;
+        enterToggle.classList.toggle("active", enterToSend);
+    });
+
+    clearChat.addEventListener("click", function() {
+        if (!confirm("Clear this conversation?")) return;
+        messagesContainer.innerHTML = "";
+        conversation = [{ role: "system", content: "You are Jhonny, a helpful AI assistant. Analyze messages, images and files when provided. Use markdown for formatting when appropriate." }];
+        addMessage("Hello! I'm Jhonny. How can I help you?", "assistant");
+    });
+
+    exportChat.addEventListener("click", function() {
+        let output = "JHONNY CHATBOX\n\n";
+        const msgs = messagesContainer.querySelectorAll(".message");
+        msgs.forEach(function(msg) {
+            const role = msg.classList.contains("user") ? "YOU" : "JHONNY";
+            const contentDiv = msg.querySelector(".message-content");
+            const text = contentDiv ? contentDiv.textContent : msg.textContent;
+            output += role + ":\n" + text + "\n\n";
+        });
+        const blob = new Blob([output], { type: "text/plain" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = "jhonny-chat.txt";
+        link.click();
+        URL.revokeObjectURL(url);
+    });
+
+    resetSettings.addEventListener("click", function() {
+        document.body.classList.remove("light");
+        themeToggle.classList.remove("active");
+        enterToSend = true;
+        enterToggle.classList.add("active");
+        autoScroll = true;
+        scrollToggle.classList.add("active");
+        localStorage.removeItem("jhonnyTheme");
+        localStorage.removeItem("jhonnyFontSize");
+        localStorage.removeItem("jhonnyAutoScroll");
+        applyFontSize(16);
+    });
+
+    // ─── START (if authenticated, already added) ──────────────────
+});
