@@ -6,7 +6,6 @@ export default async function handler(req, res) {
   }
 
   try {
-    // Parse the multipart form data
     const { messagesJson } = await parseMultipart(req);
 
     if (!messagesJson) {
@@ -15,29 +14,35 @@ export default async function handler(req, res) {
 
     const messages = JSON.parse(messagesJson);
 
-    // 🔥 CALL OPENAI – replace the dummy reply
-    const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+    // Read API key from environment variable (set in Vercel)
+    const apiKey = process.env.OPENROUTER_API_KEY;
+    if (!apiKey) {
+      throw new Error('Missing OPENROUTER_API_KEY environment variable');
+    }
+
+    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
-        'Content-Type': 'application/json'
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+        'HTTP-Referer': 'https://jhonnychatbox.vercel.app',
+        'X-Title': 'Jhonny Chatbox'
       },
       body: JSON.stringify({
-        model: 'gpt-3.5-turbo',
+        model: 'openai/gpt-3.5-turbo',
         messages: messages,
         max_tokens: 500
       })
     });
 
-    if (!openaiResponse.ok) {
-      const errorText = await openaiResponse.text();
-      throw new Error(`OpenAI error: ${openaiResponse.status} - ${errorText}`);
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`OpenRouter error: ${response.status} - ${errorText}`);
     }
 
-    const data = await openaiResponse.json();
+    const data = await response.json();
     const reply = data.choices[0].message.content;
 
-    // Send the AI reply back
     return res.status(200).json({ reply });
 
   } catch (error) {
