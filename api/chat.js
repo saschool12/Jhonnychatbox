@@ -23,7 +23,7 @@ export default async function handler(req, res) {
       if (geminiKey) apiProvider = 'gemini';
       else if (nvidiaKey) apiProvider = 'nvidia';
       else if (openRouterKey) apiProvider = 'openrouter';
-      else throw new Error('No API key found – set one of GEMINI_API_KEY, NVIDIA_API_KEY, or OPENROUTER_API_KEY');
+      else throw new Error('No API key found');
     }
 
     // ─── Process uploaded file ──────────────────────────────
@@ -35,7 +35,6 @@ export default async function handler(req, res) {
     if (fileBuffer && fileInfo) {
       const { filename, mimeType } = fileInfo;
 
-      // 🔹 IMAGE
       if (mimeType.startsWith('image/')) {
         isImage = true;
         imageBase64 = fileBuffer.toString('base64');
@@ -43,9 +42,9 @@ export default async function handler(req, res) {
         const lastUserMsg = messages.filter(m => m.role === 'user').pop();
         const userText = lastUserMsg ? lastUserMsg.content : 'Analyze this image.';
 
-        // For Gemini we handle differently; for OpenAI‑compatible we use image_url
         if (apiProvider === 'gemini') {
-          finalMessages = messages; // Gemini gets image separately
+          // Keep messages plain for Gemini – we add image later in callGemini()
+          finalMessages = messages;
         } else {
           finalMessages = [
             ...messages.slice(0, -1),
@@ -58,114 +57,40 @@ export default async function handler(req, res) {
             }
           ];
         }
-      }
-
-      // 🔹 PDF
-      else if (mimeType === 'application/pdf' || filename.endsWith('.pdf')) {
-        try {
-          const pdfParse = await import('pdf-parse');
-          const pdfData = await pdfParse.default(fileBuffer);
-          const extracted = pdfData.text.slice(0, 3000);
-          const lastIndex = finalMessages.length - 1;
-          if (finalMessages[lastIndex]?.role === 'user') {
-            finalMessages[lastIndex].content += `\n\n[PDF Content]:\n${extracted}`;
-          }
-        } catch (err) {
-          console.warn('PDF parse skipped:', err.message);
-          const lastIndex = finalMessages.length - 1;
-          if (finalMessages[lastIndex]?.role === 'user') {
-            finalMessages[lastIndex].content += `\n\n[Uploaded PDF: ${filename}] (text extraction unavailable)`;
-          }
-        }
-      }
-
-      // 🔹 Word (.docx)
-      else if (
-        mimeType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
-        filename.endsWith('.docx')
-      ) {
-        try {
-          const mammoth = await import('mammoth');
-          const result = await mammoth.extractRawText({ buffer: fileBuffer });
-          const extracted = result.value.slice(0, 3000);
-          const lastIndex = finalMessages.length - 1;
-          if (finalMessages[lastIndex]?.role === 'user') {
-            finalMessages[lastIndex].content += `\n\n[Word Document Content]:\n${extracted}`;
-          }
-        } catch (err) {
-          console.warn('DOCX parse skipped:', err.message);
-          const lastIndex = finalMessages.length - 1;
-          if (finalMessages[lastIndex]?.role === 'user') {
-            finalMessages[lastIndex].content += `\n\n[Uploaded Word document: ${filename}]`;
-          }
-        }
-      }
-
-      // 🔹 Excel (.xlsx, .xls)
-      else if (
-        mimeType === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ||
-        mimeType === 'application/vnd.ms-excel' ||
-        filename.endsWith('.xlsx') ||
-        filename.endsWith('.xls')
-      ) {
-        try {
-          const XLSX = await import('xlsx');
-          const workbook = XLSX.read(fileBuffer, { type: 'buffer' });
-          let sheetText = '';
-          workbook.SheetNames.forEach((sheetName) => {
-            const sheet = workbook.Sheets[sheetName];
-            const json = XLSX.utils.sheet_to_json(sheet);
-            sheetText += `\n[Sheet: ${sheetName}]\n${JSON.stringify(json, null, 2).slice(0, 1000)}\n`;
-          });
-          const extracted = sheetText.slice(0, 3000);
-          const lastIndex = finalMessages.length - 1;
-          if (finalMessages[lastIndex]?.role === 'user') {
-            finalMessages[lastIndex].content += `\n\n[Excel Content]:\n${extracted}`;
-          }
-        } catch (err) {
-          console.warn('Excel parse skipped:', err.message);
-          const lastIndex = finalMessages.length - 1;
-          if (finalMessages[lastIndex]?.role === 'user') {
-            finalMessages[lastIndex].content += `\n\n[Uploaded Excel file: ${filename}]`;
-          }
-        }
-      }
-
-      // 🔹 Plain text files (.txt, .csv, .json, .md)
-      else if (
-        mimeType === 'text/plain' ||
-        filename.endsWith('.txt') ||
-        filename.endsWith('.csv') ||
-        filename.endsWith('.json') ||
-        filename.endsWith('.md')
-      ) {
-        const fileText = fileBuffer.toString('utf-8').slice(0, 3000);
+      } else {
+        // Non‑image files – extract content if possible
+        const fileContent = await extractFileContent(fileBuffer, filename, mimeType);
         const lastIndex = finalMessages.length - 1;
         if (finalMessages[lastIndex]?.role === 'user') {
-          finalMessages[lastIndex].content += `\n\n[File: ${filename}]\n${fileText}`;
-        }
-      }
-
-      // 🔹 Any other file – just mention the name
-      else {
-        const lastIndex = finalMessages.length - 1;
-        if (finalMessages[lastIndex]?.role === 'user') {
-          finalMessages[lastIndex].content += `\n\n[Uploaded file: ${filename}]`;
+          finalMessages[lastIndex].content += fileContent;
         }
       }
     }
 
-    // ─── Call the appropriate API ──────────────────────────
+    // ─── Call API with fallback ──────────────────────────────
     let reply;
+    let usedProvider = apiProvider;
 
-    if (apiProvider === 'gemini') {
-      reply = await callGemini(geminiKey, finalMessages, isImage, imageBase64, imageMime);
-    } else if (apiProvider === 'nvidia') {
-      reply = await callNVIDIA(nvidiaKey, finalMessages, isImage);
-    } else if (apiProvider === 'openrouter') {
-      reply = await callOpenRouter(openRouterKey, finalMessages, isImage);
-    } else {
-      throw new Error(`Unsupported provider: ${apiProvider}`);
+    try {
+      if (apiProvider === 'gemini') {
+        reply = await callGemini(geminiKey, finalMessages, isImage, imageBase64, imageMime);
+      } else if (apiProvider === 'nvidia') {
+        reply = await callNVIDIA(nvidiaKey, finalMessages, isImage);
+      } else if (apiProvider === 'openrouter') {
+        reply = await callOpenRouter(openRouterKey, finalMessages, isImage);
+      } else {
+        throw new Error(`Unsupported provider: ${apiProvider}`);
+      }
+    } catch (err) {
+      // ─── Fallback to OpenRouter if available ───────────────
+      console.warn(`Provider ${apiProvider} failed:`, err.message);
+      if (openRouterKey && apiProvider !== 'openrouter') {
+        console.warn('Falling back to OpenRouter...');
+        usedProvider = 'openrouter (fallback)';
+        reply = await callOpenRouter(openRouterKey, finalMessages, isImage);
+      } else {
+        throw err;
+      }
     }
 
     return res.status(200).json({ reply });
@@ -178,7 +103,7 @@ export default async function handler(req, res) {
   }
 }
 
-// ─── Gemini API ──────────────────────────────────────────────
+// ─── Gemini API (correct model names) ───────────────────────
 async function callGemini(apiKey, messages, isImage, imageBase64, imageMime) {
   const contents = messages.map(msg => ({
     role: msg.role === 'user' ? 'user' : 'model',
@@ -202,7 +127,8 @@ async function callGemini(apiKey, messages, isImage, imageBase64, imageMime) {
     ];
   }
 
-  const model = isImage ? 'gemini-1.5-flash' : 'gemini-1.5-flash';
+  // Use the correct model name – gemini-1.5-flash supports both text and vision
+  const model = 'gemini-1.5-flash';
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
 
   const response = await fetch(url, {
@@ -223,7 +149,7 @@ async function callGemini(apiKey, messages, isImage, imageBase64, imageMime) {
   return data.candidates?.[0]?.content?.parts?.[0]?.text || 'No response from Gemini.';
 }
 
-// ─── NVIDIA NIM ─────────────────────────────────────────────
+// ─── NVIDIA NIM ──────────────────────────────────────────────
 async function callNVIDIA(apiKey, messages, isImage) {
   const model = isImage ? 'nvidia/neva-22b' : 'mistralai/mistral-7b-instruct-v0.2';
   const response = await fetch('https://integrate.api.nvidia.com/v1/chat/completions', {
@@ -277,7 +203,52 @@ async function callOpenRouter(apiKey, messages, isImage) {
   return data.choices[0].message.content;
 }
 
-// ─── Helper: parse multipart/form-data ────────────────────
+// ─── Extract text from various file types ──────────────────
+async function extractFileContent(buffer, filename, mimeType) {
+  let content = `\n\n[Uploaded file: ${filename}]`;
+  try {
+    if (mimeType === 'application/pdf' || filename.endsWith('.pdf')) {
+      const pdfParse = await import('pdf-parse');
+      const pdfData = await pdfParse.default(buffer);
+      content = `\n\n[PDF Content]:\n${pdfData.text.slice(0, 3000)}`;
+    } else if (
+      mimeType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
+      filename.endsWith('.docx')
+    ) {
+      const mammoth = await import('mammoth');
+      const result = await mammoth.extractRawText({ buffer });
+      content = `\n\n[Word Document Content]:\n${result.value.slice(0, 3000)}`;
+    } else if (
+      mimeType === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ||
+      mimeType === 'application/vnd.ms-excel' ||
+      filename.endsWith('.xlsx') ||
+      filename.endsWith('.xls')
+    ) {
+      const XLSX = await import('xlsx');
+      const workbook = XLSX.read(buffer, { type: 'buffer' });
+      let sheetText = '';
+      workbook.SheetNames.forEach(sheetName => {
+        const sheet = workbook.Sheets[sheetName];
+        const json = XLSX.utils.sheet_to_json(sheet);
+        sheetText += `\n[Sheet: ${sheetName}]\n${JSON.stringify(json, null, 2).slice(0, 1000)}\n`;
+      });
+      content = `\n\n[Excel Content]:\n${sheetText.slice(0, 3000)}`;
+    } else if (
+      mimeType === 'text/plain' ||
+      filename.endsWith('.txt') ||
+      filename.endsWith('.csv') ||
+      filename.endsWith('.json') ||
+      filename.endsWith('.md')
+    ) {
+      content = `\n\n[File: ${filename}]\n${buffer.toString('utf-8').slice(0, 3000)}`;
+    }
+  } catch (e) {
+    console.warn('File parse warning:', e.message);
+  }
+  return content;
+}
+
+// ─── Helper: parse multipart/form-data ──────────────────────
 function parseMultipart(req) {
   return new Promise((resolve, reject) => {
     const busboy = Busboy({ headers: req.headers });
