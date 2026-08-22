@@ -1,110 +1,77 @@
-const API_URL = "/api/chat";
+async function sendMessage() {
+    const text = userInput.value.trim();
 
-
-const messagesContainer =
-    document.getElementById("chatMessages");
-
-const userInput =
-    document.getElementById("userInput");
-
-const sendBtn =
-    document.getElementById("sendBtn");
-
-const photoButton =
-    document.getElementById("photoButton");
-
-const imageInput =
-    document.getElementById("imageInput");
-
-const fileButton =
-    document.getElementById("fileButton");
-
-const fileInput =
-    document.getElementById("fileInput");
-
-const attachmentPreview =
-    document.getElementById("attachmentPreview");
-
-const attachmentName =
-    document.getElementById("attachmentName");
-
-const attachmentSize =
-    document.getElementById("attachmentSize");
-
-const attachmentIcon =
-    document.getElementById("attachmentIcon");
-
-const removeAttachment =
-    document.getElementById("removeAttachment");
-
-const settingsButton =
-    document.getElementById("settingsButton");
-
-const settingsPanel =
-    document.getElementById("settingsPanel");
-
-const themeToggle =
-    document.getElementById("themeToggle");
-
-const enterToggle =
-    document.getElementById("enterToggle");
-
-const clearChat =
-    document.getElementById("clearChat");
-
-const exportChat =
-    document.getElementById("exportChat");
-
-const resetSettings =
-    document.getElementById("resetSettings");
-
-const messageCount =
-    document.getElementById("messageCount");
-
-
-let selectedImage = null;
-
-let selectedFile = null;
-
-let selectedFileData = null;
-
-let enterToSend = true;
-
-
-let conversation = [
-    {
-        role: "system",
-        content:
-            "You are Jhonny, a helpful AI assistant. " +
-            "Analyze messages, images and files when provided."
+    if (!text && !selectedImage && !selectedFile) {
+        return;
     }
-];
 
+    const userContent = text || (selectedFile ? "Analyze this file." : "Analyze this image.");
 
-/* SETTINGS */
+    addMessage(userContent, "user", selectedImage, selectedFile ? selectedFile.name : null);
 
-settingsButton.addEventListener(
-    "click",
-    function(event) {
+    userInput.value = "";
 
-        event.stopPropagation();
+    const image = selectedImage;
+    const file = selectedFile;
+    selectedImage = null;
+    selectedFile = null;
+    selectedFileData = null;
+    imageInput.value = "";
+    fileInput.value = "";
+    attachmentPreview.style.display = "none";
 
-        settingsPanel.classList.toggle("show");
+    sendBtn.disabled = true;
+    photoButton.disabled = true;
+    fileButton.disabled = true;
+    userInput.disabled = true;
 
+    addTyping();
+
+    try {
+        conversation.push({ role: "user", content: userContent });
+
+        const formData = new FormData();
+        formData.append("messages", JSON.stringify(conversation));
+
+        if (file) {
+            formData.append("file", file);
+        } else if (image) {
+            const blob = await (await fetch(image)).blob();
+            const fileType = blob.type;
+            const fileName = "image." + fileType.split("/")[1];
+            const fileObj = new File([blob], fileName, { type: fileType });
+            formData.append("file", fileObj);
+        }
+
+        const response = await fetch(API_URL, {
+            method: "POST",
+            body: formData
+        });
+
+        if (!response.ok) {
+            const error = await response.text();
+            throw new Error(error || "Server error");
+        }
+
+        const data = await response.json();
+        const reply = data.reply || "No response received.";
+
+        removeTyping();
+        addMessage(reply, "assistant");
+        conversation.push({ role: "assistant", content: reply });
+
+    } catch (error) {
+        removeTyping();
+        addMessage("Error: " + error.message, "assistant");
+        console.error(error);
+    } finally {
+        sendBtn.disabled = false;
+        photoButton.disabled = false;
+        fileButton.disabled = false;
+        userInput.disabled = false;
+        userInput.focus();
     }
-);
-
-
-settingsPanel.addEventListener(
-    "click",
-    function(event) {
-
-        event.stopPropagation();
-
-    }
-);
-
-
+}
 document.addEventListener(
     "click",
     function() {
