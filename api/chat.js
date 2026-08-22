@@ -11,29 +11,29 @@ export default async function handler(req, res) {
   }
 
   try {
-    // ─── 1. Parse the multipart request ──────────────────────────
+    // ─── Parse multipart ──────────────────────────────────────────
     const { messagesJson, fileBuffer, fileInfo } = await parseMultipart(req);
 
     if (!messagesJson) {
       return res.status(400).json({ error: 'Missing messages field' });
     }
 
-    // ─── 2. Check API key ─────────────────────────────────────────
+    // ─── API key ──────────────────────────────────────────────────
     const apiKey = process.env.OPENROUTER_API_KEY;
     if (!apiKey) {
-      return res.status(500).json({ error: 'Missing OPENROUTER_API_KEY env var' });
+      return res.status(500).json({ error: 'Missing OPENROUTER_API_KEY environment variable' });
     }
 
-    // ─── 3. Parse messages ────────────────────────────────────────
+    // ─── Parse messages ──────────────────────────────────────────
     const messages = JSON.parse(messagesJson);
     let finalMessages = messages;
     let isImage = false;
 
-    // ─── 4. Process any uploaded file ────────────────────────────
+    // ─── Process uploaded file ──────────────────────────────────
     if (fileBuffer && fileInfo) {
       const { filename, mimeType } = fileInfo;
 
-      // ─── 4a. IMAGE ─────────────────────────────────────────────
+      // ─── IMAGE ──────────────────────────────────────────────────
       if (mimeType.startsWith('image/')) {
         isImage = true;
         const base64Image = fileBuffer.toString('base64');
@@ -53,69 +53,93 @@ export default async function handler(req, res) {
         ];
       }
 
-      // ─── 4b. Other files ────────────────────────────────────────
-      else {
-        // Try to extract text, but if anything fails, just mention the file name.
-        let fileContent = '';
+      // ─── PDF ────────────────────────────────────────────────────
+      else if (mimeType === 'application/pdf' || filename.endsWith('.pdf')) {
         try {
-          // PDF
-          if (mimeType === 'application/pdf' || filename.endsWith('.pdf')) {
-            const pdfParse = await import('pdf-parse');
-            const pdfData = await pdfParse.default(fileBuffer);
-            fileContent = `\n\n[PDF Content]:\n${pdfData.text.slice(0, 3000)}`;
-          }
-          // Word
-          else if (
-            mimeType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
-            filename.endsWith('.docx')
-          ) {
-            const mammoth = await import('mammoth');
-            const result = await mammoth.extractRawText({ buffer: fileBuffer });
-            fileContent = `\n\n[Word Content]:\n${result.value.slice(0, 3000)}`;
-          }
-          // Excel
-          else if (
-            mimeType === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ||
-            mimeType === 'application/vnd.ms-excel' ||
-            filename.endsWith('.xlsx') ||
-            filename.endsWith('.xls')
-          ) {
-            const XLSX = await import('xlsx');
-            const workbook = XLSX.read(fileBuffer, { type: 'buffer' });
-            let sheetText = '';
-            workbook.SheetNames.forEach(sheetName => {
-              const sheet = workbook.Sheets[sheetName];
-              const json = XLSX.utils.sheet_to_json(sheet);
-              sheetText += `\n[Sheet: ${sheetName}]\n${JSON.stringify(json, null, 2).slice(0, 1000)}`;
-            });
-            fileContent = `\n\n[Excel Content]:\n${sheetText.slice(0, 3000)}`;
-          }
-          // Plain text
-          else if (
-            mimeType === 'text/plain' ||
-            filename.endsWith('.txt') ||
-            filename.endsWith('.csv') ||
-            filename.endsWith('.json') ||
-            filename.endsWith('.md')
-          ) {
-            fileContent = `\n\n[File: ${filename}]\n${fileBuffer.toString('utf-8').slice(0, 3000)}`;
+          const pdfParse = await import('pdf-parse');
+          const pdfData = await pdfParse.default(fileBuffer);
+          const extracted = pdfData.text.slice(0, 3000);
+          const lastIndex = finalMessages.length - 1;
+          if (finalMessages[lastIndex]?.role === 'user') {
+            finalMessages[lastIndex].content += `\n\n[PDF Content]:\n${extracted}`;
           }
         } catch (err) {
-          console.warn('File parsing skipped:', err.message);
+          console.warn('PDF parse skipped:', err.message);
         }
+      }
 
-        // If we got any extracted text, append it; otherwise just mention the file.
+      // ─── Word (.docx) ──────────────────────────────────────────
+      else if (
+        mimeType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
+        filename.endsWith('.docx')
+      ) {
+        try {
+          const mammoth = await import('mammoth');
+          const result = await mammoth.extractRawText({ buffer: fileBuffer });
+          const extracted = result.value.slice(0, 3000);
+          const lastIndex = finalMessages.length - 1;
+          if (finalMessages[lastIndex]?.role === 'user') {
+            finalMessages[lastIndex].content += `\n\n[Word Content]:\n${extracted}`;
+          }
+        } catch (err) {
+          console.warn('DOCX parse skipped:', err.message);
+        }
+      }
+
+      // ─── Excel (.xlsx, .xls) ──────────────────────────────────
+      else if (
+        mimeType === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ||
+        mimeType === 'application/vnd.ms-excel' ||
+        filename.endsWith('.xlsx') ||
+        filename.endsWith('.xls')
+      ) {
+        try {
+          const XLSX = await import('xlsx');
+          const workbook = XLSX.read(fileBuffer, { type: 'buffer' });
+          let sheetText = '';
+          workbook.SheetNames.forEach(sheetName => {
+            const sheet = workbook.Sheets[sheetName];
+            const json = XLSX.utils.sheet_to_json(sheet);
+            sheetText += `\n[Sheet: ${sheetName}]\n${JSON.stringify(json, null, 2).slice(0, 1000)}`;
+          });
+          const extracted = sheetText.slice(0, 3000);
+          const lastIndex = finalMessages.length - 1;
+          if (finalMessages[lastIndex]?.role === 'user') {
+            finalMessages[lastIndex].content += `\n\n[Excel Content]:\n${extracted}`;
+          }
+        } catch (err) {
+          console.warn('Excel parse skipped:', err.message);
+        }
+      }
+
+      // ─── Plain text files ──────────────────────────────────────
+      else if (
+        mimeType === 'text/plain' ||
+        filename.endsWith('.txt') ||
+        filename.endsWith('.csv') ||
+        filename.endsWith('.json') ||
+        filename.endsWith('.md')
+      ) {
+        const fileText = fileBuffer.toString('utf-8').slice(0, 3000);
         const lastIndex = finalMessages.length - 1;
         if (finalMessages[lastIndex]?.role === 'user') {
-          finalMessages[lastIndex].content += fileContent || `\n\n[Uploaded file: ${filename}]`;
+          finalMessages[lastIndex].content += `\n\n[File: ${filename}]\n${fileText}`;
+        }
+      }
+
+      // ─── Any other file ────────────────────────────────────────
+      else {
+        const lastIndex = finalMessages.length - 1;
+        if (finalMessages[lastIndex]?.role === 'user') {
+          finalMessages[lastIndex].content += `\n\n[Uploaded file: ${filename}]`;
         }
       }
     }
 
-    // ─── 5. Choose model ──────────────────────────────────────────
+    // ─── Choose model ──────────────────────────────────────────
     const model = isImage ? 'openai/gpt-4o' : 'openai/gpt-3.5-turbo';
 
-    // ─── 6. Call OpenRouter ──────────────────────────────────────
+    // ─── Call OpenRouter ──────────────────────────────────────
     const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -125,7 +149,7 @@ export default async function handler(req, res) {
         'X-Title': 'Jhonny Chatbox'
       },
       body: JSON.stringify({
-        model,
+        model: model,
         messages: finalMessages,
         max_tokens: 500,
         temperature: 0.7
@@ -133,8 +157,8 @@ export default async function handler(req, res) {
     });
 
     if (!response.ok) {
-      const errText = await response.text();
-      throw new Error(`OpenRouter API error: ${response.status} - ${errText}`);
+      const errorText = await response.text();
+      throw new Error(`OpenRouter API error: ${response.status} - ${errorText}`);
     }
 
     const data = await response.json();
@@ -144,15 +168,13 @@ export default async function handler(req, res) {
 
   } catch (error) {
     console.error('Server error:', error);
-    // 👇 Always return JSON – never crash
     return res.status(500).json({
-      error: error.message || 'Internal server error',
-      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+      error: error.message || 'Internal server error'
     });
   }
 }
 
-// ─── Parse multipart/form-data ─────────────────────────────────────
+// ─── Helper: parse multipart/form-data ────────────────────────────
 function parseMultipart(req) {
   return new Promise((resolve, reject) => {
     const busboy = Busboy({ headers: req.headers });
