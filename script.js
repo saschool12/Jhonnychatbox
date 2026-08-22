@@ -22,6 +22,10 @@ document.addEventListener("DOMContentLoaded", function() {
     const resetSettings = document.getElementById("resetSettings");
     const messageCount = document.getElementById("messageCount");
 
+    // ─── Font size elements ──────────────────────────────────────
+    const fontSizeSlider = document.getElementById("fontSizeSlider");
+    const fontSizeLabel = document.getElementById("fontSizeLabel");
+
     // ─── State ──────────────────────────────────────────────────
     let selectedImage = null;
     let selectedFile = null;
@@ -41,6 +45,28 @@ document.addEventListener("DOMContentLoaded", function() {
         userInput.focus();
     }
 
+    // ─── Apply font size ──────────────────────────────────────
+    function applyFontSize(size) {
+        document.documentElement.style.setProperty('--message-font-size', size + 'px');
+        localStorage.setItem('jhonnyFontSize', size);
+        fontSizeLabel.textContent = size + 'px';
+        fontSizeSlider.value = size;
+    }
+
+    // ─── Load saved font size ─────────────────────────────────
+    const savedSize = localStorage.getItem('jhonnyFontSize');
+    if (savedSize) {
+        applyFontSize(parseInt(savedSize));
+    } else {
+        applyFontSize(16);
+    }
+
+    // ─── Font size slider event ──────────────────────────────
+    fontSizeSlider.addEventListener('input', function() {
+        const size = parseInt(this.value);
+        applyFontSize(size);
+    });
+
     // ─── Message count ─────────────────────────────────────────
     function updateMessageCount() {
         messageCount.textContent = messagesContainer.querySelectorAll(".message").length;
@@ -55,7 +81,6 @@ document.addEventListener("DOMContentLoaded", function() {
             .replace(/"/g, '&quot;')
             .replace(/'/g, '&#039;');
 
-        // Code blocks ```language ... ```
         escaped = escaped.replace(
             /```(\w*)\s*([\s\S]*?)```/g,
             function(match, language, code) {
@@ -73,7 +98,6 @@ document.addEventListener("DOMContentLoaded", function() {
             }
         );
 
-        // Inline `code`
         escaped = escaped.replace(
             /`([^`]+)`/g,
             '<code class="inline-code">$1</code>'
@@ -88,7 +112,6 @@ document.addEventListener("DOMContentLoaded", function() {
         const message = document.createElement("div");
         message.className = "message " + role;
 
-        // Image attachment
         if (image) {
             const img = document.createElement("img");
             img.src = image;
@@ -96,7 +119,6 @@ document.addEventListener("DOMContentLoaded", function() {
             message.appendChild(img);
         }
 
-        // File attachment
         if (fileName) {
             const fileBox = document.createElement("div");
             fileBox.className = "file-box";
@@ -111,7 +133,6 @@ document.addEventListener("DOMContentLoaded", function() {
             message.appendChild(fileBox);
         }
 
-        // Content
         if (content) {
             const contentDiv = document.createElement("div");
             contentDiv.className = "message-content";
@@ -119,7 +140,6 @@ document.addEventListener("DOMContentLoaded", function() {
             message.appendChild(contentDiv);
         }
 
-        // Copy button for assistant messages
         if (role === "assistant" && content) {
             const copy = document.createElement("button");
             copy.className = "copy-button";
@@ -198,7 +218,7 @@ document.addEventListener("DOMContentLoaded", function() {
             showAttachment(file, true);
         };
         reader.readAsDataURL(file);
-        imageInput.value = ""; // reset so same file can be re-uploaded
+        imageInput.value = "";
     });
 
     // ─── FILE upload ──────────────────────────────────────────
@@ -245,7 +265,6 @@ document.addEventListener("DOMContentLoaded", function() {
         fileInput.value = "";
         attachmentPreview.style.display = "none";
 
-        // Disable inputs
         sendBtn.disabled = true;
         photoButton.disabled = true;
         fileButton.disabled = true;
@@ -287,7 +306,6 @@ document.addEventListener("DOMContentLoaded", function() {
             addMessage("Error: " + error.message, "assistant");
             console.error(error);
         } finally {
-            // ✅ Always re-enable
             enableAll();
         }
     }
@@ -364,6 +382,8 @@ document.addEventListener("DOMContentLoaded", function() {
         enterToSend = true;
         enterToggle.classList.add("active");
         localStorage.removeItem("jhonnyTheme");
+        localStorage.removeItem("jhonnyFontSize");
+        applyFontSize(16);
     });
 
     // ─── START ──────────────────────────────────────────────────
