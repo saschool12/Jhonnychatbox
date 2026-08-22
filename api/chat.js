@@ -1,5 +1,4 @@
 import Busboy from 'busboy';
-import mammoth from 'mammoth';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -48,6 +47,7 @@ export default async function handler(req, res) {
       // ─── PDF ──────────────────────────────────────────────
       else if (mimeType === 'application/pdf') {
         try {
+          // Try to import pdf-parse dynamically
           const pdfParse = await import('pdf-parse');
           const pdfData = await pdfParse.default(fileBuffer);
           const extractedText = pdfData.text.slice(0, 3000);
@@ -55,8 +55,13 @@ export default async function handler(req, res) {
           if (finalMessages[lastIndex]?.role === 'user') {
             finalMessages[lastIndex].content += `\n\n[PDF Content]:\n${extractedText}`;
           }
-        } catch (pdfErr) {
-          console.error('PDF parse error:', pdfErr);
+        } catch (err) {
+          console.warn('PDF parsing skipped:', err.message);
+          // Just mention the file name
+          const lastIndex = finalMessages.length - 1;
+          if (finalMessages[lastIndex]?.role === 'user') {
+            finalMessages[lastIndex].content += `\n\n[Uploaded PDF: ${filename}] (text extraction unavailable)`;
+          }
         }
       }
 
@@ -66,14 +71,19 @@ export default async function handler(req, res) {
         filename.endsWith('.docx')
       ) {
         try {
+          const mammoth = await import('mammoth');
           const result = await mammoth.extractRawText({ buffer: fileBuffer });
           const extractedText = result.value.slice(0, 3000);
           const lastIndex = finalMessages.length - 1;
           if (finalMessages[lastIndex]?.role === 'user') {
             finalMessages[lastIndex].content += `\n\n[Word Document Content]:\n${extractedText}`;
           }
-        } catch (docxErr) {
-          console.error('DOCX parse error:', docxErr);
+        } catch (err) {
+          console.warn('DOCX parsing skipped:', err.message);
+          const lastIndex = finalMessages.length - 1;
+          if (finalMessages[lastIndex]?.role === 'user') {
+            finalMessages[lastIndex].content += `\n\n[Uploaded Word document: ${filename}] (text extraction unavailable)`;
+          }
         }
       }
 
@@ -92,7 +102,7 @@ export default async function handler(req, res) {
         }
       }
 
-      // ─── Other files (just mention the name) ─────────────
+      // ─── Other files ────────────────────────────────────
       else {
         const lastIndex = finalMessages.length - 1;
         if (finalMessages[lastIndex]?.role === 'user') {
@@ -105,6 +115,68 @@ export default async function handler(req, res) {
     const model = isImage ? 'openai/gpt-4o' : 'openai/gpt-3.5-turbo';
 
     const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+        'HTTP-Referer': 'https://jhonnychatbox.vercel.app',
+        'X-Title': 'Jhonny Chatbox'
+      },
+      body: JSON.stringify({
+        model: model,
+        messages: finalMessages,
+        max_tokens: 500
+      })
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`API error: ${response.status} - ${errorText}`);
+    }
+
+    const data = await response.json();
+    const reply = data.choices[0].message.content;
+
+    return res.status(200).json({ reply });
+
+  } catch (error) {
+    console.error('Server error:', error);
+    // ✅ Always return a JSON – this prevents FUNCTION_INVOCATION_FAILED
+    return res.status(500).json({
+      error: error.message || 'Internal server error',
+      details: error.stack || 'No stack trace'
+    });
+  }
+}
+
+function parseMultipart(req) {
+  return new Promise((resolve, reject) => {
+    const busboy = Busboy({ headers: req.headers });
+    const fields = {};
+    let fileBuffer = null;
+    let fileInfo = null;
+
+    busboy.on('field', (fieldname, val) => {
+      fields[fieldname] = val;
+    });
+
+    busboy.on('file', (fieldname, file, info) => {
+      const chunks = [];
+      file.on('data', (chunk) => chunks.push(chunk));
+      file.on('end', () => {
+        fileBuffer = Buffer.concat(chunks);
+        fileInfo = info;
+      });
+    });
+
+    busboy.on('finish', () => {
+      resolve({ messagesJson: fields.messages, fileBuffer, fileInfo });
+    });
+
+    busboy.on('error', reject);
+    req.pipe(busboy);
+  });
+}    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${apiKey}`,
