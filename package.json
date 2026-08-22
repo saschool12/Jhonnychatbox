@@ -1,12 +1,12 @@
 {
-    "name": "jhonny-chatbox",
-    "version": "1.0.0",
-    "private": true,
-    "type": "module",
-    "dependencies": {
-        "busboy": "^1.6.0",
-        "pdf-parse": "^1.1.1",
-        "mammoth": "^1.6.0",
-        "xlsx": "^0.18.5"
-    }
+  "name": "jhony-chatbox",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "busboy": "^1.6.0",
+    "pdf-parse": "^1.1.1",
+    "mammoth": "^1.6.0",
+    "xlsx": "^0.18.5"
+  }
 }
