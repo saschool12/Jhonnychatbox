@@ -1,4 +1,5 @@
 import Busboy from 'busboy';
+import mammoth from 'mammoth';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -21,11 +22,10 @@ export default async function handler(req, res) {
     let finalMessages = messages;
     let isImage = false;
 
-    // ─── Process the uploaded file ─────────────────────────────────────────────
     if (fileBuffer && fileInfo) {
       const { filename, mimeType } = fileInfo;
 
-      // 1️⃣ IMAGE → use vision model
+      // ─── IMAGE ──────────────────────────────────────────────
       if (mimeType.startsWith('image/')) {
         isImage = true;
         const base64Image = fileBuffer.toString('base64');
@@ -45,29 +45,39 @@ export default async function handler(req, res) {
         ];
       }
 
-      // 2️⃣ PDF → extract text (with dynamic import)
+      // ─── PDF ──────────────────────────────────────────────
       else if (mimeType === 'application/pdf') {
         try {
           const pdfParse = await import('pdf-parse');
           const pdfData = await pdfParse.default(fileBuffer);
-          const extractedText = pdfData.text.slice(0, 3000); // limit to 3000 chars
-
-          // Append extracted text to the last user message
+          const extractedText = pdfData.text.slice(0, 3000);
           const lastIndex = finalMessages.length - 1;
           if (finalMessages[lastIndex]?.role === 'user') {
             finalMessages[lastIndex].content += `\n\n[PDF Content]:\n${extractedText}`;
           }
         } catch (pdfErr) {
           console.error('PDF parse error:', pdfErr);
-          // If parsing fails, still let the AI know the file name
-          const lastIndex = finalMessages.length - 1;
-          if (finalMessages[lastIndex]?.role === 'user') {
-            finalMessages[lastIndex].content += `\n\n[PDF file: ${filename}] (could not extract text)`;
-          }
         }
       }
 
-      // 3️⃣ Text files (.txt, .csv, .json, .md) → read as string
+      // ─── DOCX (Word) ──────────────────────────────────────
+      else if (
+        mimeType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
+        filename.endsWith('.docx')
+      ) {
+        try {
+          const result = await mammoth.extractRawText({ buffer: fileBuffer });
+          const extractedText = result.value.slice(0, 3000);
+          const lastIndex = finalMessages.length - 1;
+          if (finalMessages[lastIndex]?.role === 'user') {
+            finalMessages[lastIndex].content += `\n\n[Word Document Content]:\n${extractedText}`;
+          }
+        } catch (docxErr) {
+          console.error('DOCX parse error:', docxErr);
+        }
+      }
+
+      // ─── Plain text files ────────────────────────────────
       else if (
         mimeType === 'text/plain' ||
         filename.endsWith('.txt') ||
@@ -82,7 +92,7 @@ export default async function handler(req, res) {
         }
       }
 
-      // 4️⃣ Other files (DOCX, etc.) → just mention the file name
+      // ─── Other files (just mention the name) ─────────────
       else {
         const lastIndex = finalMessages.length - 1;
         if (finalMessages[lastIndex]?.role === 'user') {
@@ -91,7 +101,7 @@ export default async function handler(req, res) {
       }
     }
 
-    // ─── Call OpenRouter ──────────────────────────────────────────────────────
+    // ─── Call OpenRouter ──────────────────────────────────
     const model = isImage ? 'openai/gpt-4o' : 'openai/gpt-3.5-turbo';
 
     const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
@@ -105,6 +115,57 @@ export default async function handler(req, res) {
       body: JSON.stringify({
         model: model,
         messages: finalMessages,
+        max_tokens: 500
+      })
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`API error: ${response.status} - ${errorText}`);
+    }
+
+    const data = await response.json();
+    const reply = data.choices[0].message.content;
+
+    return res.status(200).json({ reply });
+
+  } catch (error) {
+    console.error('Server error:', error);
+    return res.status(500).json({
+      error: error.message || 'Internal server error',
+      details: error.stack || 'No stack trace'
+    });
+  }
+}
+
+function parseMultipart(req) {
+  return new Promise((resolve, reject) => {
+    const busboy = Busboy({ headers: req.headers });
+    const fields = {};
+    let fileBuffer = null;
+    let fileInfo = null;
+
+    busboy.on('field', (fieldname, val) => {
+      fields[fieldname] = val;
+    });
+
+    busboy.on('file', (fieldname, file, info) => {
+      const chunks = [];
+      file.on('data', (chunk) => chunks.push(chunk));
+      file.on('end', () => {
+        fileBuffer = Buffer.concat(chunks);
+        fileInfo = info;
+      });
+    });
+
+    busboy.on('finish', () => {
+      resolve({ messagesJson: fields.messages, fileBuffer, fileInfo });
+    });
+
+    busboy.on('error', reject);
+    req.pipe(busboy);
+  });
+}        messages: finalMessages,
         max_tokens: 500
       })
     });
