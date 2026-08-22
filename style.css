@@ -1,3 +1,16 @@
+/* ─── Font size variable ────────────────────────────────────── */
+:root {
+    --message-font-size: 16px;
+}
+.message, .message-content, .message-content *,
+#userInput, .send-button, .icon-button,
+.settings-button, .setting span, .setting button {
+    font-size: var(--message-font-size);
+}
+.code-code {
+    font-size: calc(var(--message-font-size) * 0.9);
+}
+
 /* ─── RESET & BASE ────────────────────────────────────────────────── */
 * {
     margin: 0;
