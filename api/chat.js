@@ -15,17 +15,16 @@ export default async function handler(req, res) {
     const messages = JSON.parse(messagesJson);
     const apiKey = process.env.OPENROUTER_API_KEY;
     if (!apiKey) {
-      throw new Error('Missing OPENROUTER_API_KEY environment variable');
+      throw new Error('Missing OPENROUTER_API_KEY');
     }
 
     let finalMessages = messages;
     let isImage = false;
 
-    // Handle file uploads
     if (fileBuffer && fileInfo) {
       const { mimeType } = fileInfo;
 
-      // IMAGE: convert to base64 and use vision model
+      // IMAGE → use vision model
       if (mimeType.startsWith('image/')) {
         isImage = true;
         const base64Image = fileBuffer.toString('base64');
@@ -44,29 +43,11 @@ export default async function handler(req, res) {
           }
         ];
       }
-
-      // PDF: extract text (if pdf-parse is installed)
-      if (mimeType === 'application/pdf') {
-        try {
-          // Dynamically import pdf-parse to avoid breaking if not installed
-          const pdfParse = await import('pdf-parse');
-          const pdfData = await pdfParse.default(fileBuffer);
-          const extractedText = pdfData.text.slice(0, 3000);
-          const lastIndex = finalMessages.length - 1;
-          if (finalMessages[lastIndex]?.role === 'user') {
-            finalMessages[lastIndex].content += `\n\n[PDF Content]:\n${extractedText}`;
-          }
-        } catch (pdfErr) {
-          console.error('PDF parse error:', pdfErr);
-          // Continue without PDF text if parse fails
-        }
-      }
     }
 
-    // Choose model based on whether it's an image
-    const model = isImage ? 'google/gemini-1.5-flash-latest' : 'openai/gpt-3.5-turbo';
+    // ✅ Use a VALID vision model for images, otherwise use regular text model
+    const model = isImage ? 'openai/gpt-4o' : 'openai/gpt-3.5-turbo';
 
-    // Call OpenRouter API
     const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -94,7 +75,6 @@ export default async function handler(req, res) {
 
   } catch (error) {
     console.error('Server error:', error);
-    // ✅ Always return a JSON error – this prevents FUNCTION_INVOCATION_FAILED
     return res.status(500).json({ 
       error: error.message || 'Internal server error',
       details: error.stack || 'No stack trace'
