@@ -15,8 +15,8 @@ export default async function handler(req, res) {
     const messages = JSON.parse(messagesJson);
     const lastMessage = messages[messages.length - 1]?.content || "nothing";
 
-    // 🔥 REPLACE THIS DUMMY REPLY with your real AI call later
-    const reply = "✅ Server got: " + lastMessage;
+    // 🔥 REPLACE THIS with your real AI call later
+    const reply = `Server got: ${lastMessage}`;
 
     return res.status(200).json({ reply });
 
@@ -42,10 +42,4 @@ function parseMultipart(req) {
     busboy.on('error', reject);
     req.pipe(busboy);
   });
-}                "Something went wrong."
-
-        });
-
-    }
-
 }
