@@ -1,110 +1,93 @@
-import OpenAI from "openai";
+const chatMessages = document.getElementById("chatMessages");
+const messageInput = document.getElementById("messageInput");
+const sendButton = document.getElementById("sendButton");
 
-const client = new OpenAI({
-    apiKey: process.env.OPENROUTER_API_KEY,
-    baseURL: "https://openrouter.ai/api/v1"
-});
+let messages = [];
 
+function addMessage(text, type) {
+    const message = document.createElement("div");
 
-export default async function handler(req, res) {
+    message.className = "message " + type;
+    message.textContent = text;
 
-    if (req.method !== "POST") {
+    chatMessages.appendChild(message);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+}
 
-        return res.status(405).json({
-            error: "Method not allowed"
-        });
+function setLoading(loading) {
+    sendButton.disabled = loading;
+    sendButton.textContent = loading ? "Sending..." : "Send";
+}
 
+async function sendMessage() {
+    const message = messageInput.value.trim();
+
+    if (!message) {
+        return;
     }
 
+    addMessage(message, "user");
+
+    messageInput.value = "";
+
+    messages.push({
+        role: "user",
+        content: message
+    });
+
+    setLoading(true);
 
     try {
+        const response = await fetch("/api/chat", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                messages: messages
+            })
+        });
 
-        let body = "";
+        const data = await response.json();
 
-
-        for await (const chunk of req) {
-
-            body += chunk;
-
+        if (!response.ok) {
+            throw new Error(
+                data.error || "Something went wrong"
+            );
         }
 
+        const reply = data.reply || "No response received.";
 
-        const contentType =
-            req.headers["content-type"] || "";
+        messages.push({
+            role: "assistant",
+            content: reply
+        });
 
+        addMessage(reply, "assistant");
 
-        let messages = [];
+    } catch (error) {
+        console.error("Chat Error:", error);
 
+        addMessage(
+            "Error: " + error.message,
+            "assistant"
+        );
+    }
 
-        if (
-            contentType.includes(
-                "application/json"
-            )
-        ) {
+    setLoading(false);
+    messageInput.focus();
+}
 
-            const data =
-                JSON.parse(body);
+sendButton.addEventListener("click", sendMessage);
 
+messageInput.addEventListener("keydown", function(event) {
+    if (event.key === "Enter" && !event.shiftKey) {
+        event.preventDefault();
+        sendMessage();
+    }
+});
 
-            messages =
-                typeof data.messages === "string"
-                    ? JSON.parse(data.messages)
-                    : data.messages;
-
-        }
-
-        else {
-
-            const params =
-                new URLSearchParams(body);
-
-
-            const messagesText =
-                params.get("messages");
-
-
-            if (messagesText) {
-
-                messages =
-                    JSON.parse(messagesText);
-
-            }
-
-        }
-
-
-        if (!Array.isArray(messages)) {
-
-            return res.status(400).json({
-                error: "Invalid messages"
-            });
-
-        }
-
-
-        const completion =
-            await client.chat.completions.create({
-
-                model:
-                    "openai/gpt-4o-mini",
-
-                messages:
-                    messages,
-
-                temperature:
-                    0.7
-
-            });
-
-
-        const reply =
-            completion
-                .choices?.[0]
-                ?.message?.content ||
-            "No response received.";
-
-
-        return res.status(200).json({
+messageInput.focus();        return res.status(200).json({
             reply: reply
         });
 
