@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jhonny Chatbox</title>
+
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+<div class="chat-container">
+
+    <header class="chat-header">
+
+        <img
+            class="chat-logo"
+            src="https://user26145.na.imgto.link/public/20260822/1000016526.avif"
+            alt="Jhonny"
+        >
+
+        <div class="header-text">
+            <div class="header-title">
+                Jhonny Chatbox
+            </div>
+
+            <div class="status">
+                Online
+            </div>
+        </div>
+
+        <button
+            class="settings-button"
+            id="settingsButton"
+            title="Settings">
+            ⚙
+        </button>
+
+    </header>
+
+
+    <div
+        class="settings-panel"
+        id="settingsPanel">
+
+        <h2>Settings</h2>
+
+        <div class="setting">
+            <span>Light Mode</span>
+            <div
+                class="toggle"
+                id="themeToggle">
+            </div>
+        </div>
+
+        <div class="setting">
+            <span>Enter to Send</span>
+            <div
+                class="toggle active"
+                id="enterToggle">
+            </div>
+        </div>
+
+        <div class="setting">
+            <span>Messages</span>
+            <span id="messageCount">0</span>
+        </div>
+
+        <div class="setting">
+            <span>Clear Chat</span>
+            <button id="clearChat">
+                Clear
+            </button>
+        </div>
+
+        <div class="setting">
+            <span>Export Chat</span>
+            <button id="exportChat">
+                Export
+            </button>
+        </div>
+
+        <div class="setting">
+            <span>Reset</span>
+            <button id="resetSettings">
+                Reset
+            </button>
+        </div>
+
+    </div>
+
+
+    <main
+        class="chat-messages"
+        id="chatMessages">
+    </main>
+
+
+    <div
+        class="attachment-preview"
+        id="attachmentPreview">
+
+        <div class="attachment-box">
+
+            <div
+                class="attachment-icon"
+                id="attachmentIcon">
+                📄
+            </div>
+
+            <div class="attachment-info">
+
+                <div
+                    class="attachment-name"
+                    id="attachmentName">
+                </div>
+
+                <div
+                    class="attachment-size"
+                    id="attachmentSize">
+                </div>
+
+            </div>
+
+            <button
+                class="remove-attachment"
+                id="removeAttachment">
+                ×
+            </button>
+
+        </div>
+
+    </div>
+
+
+    <div class="chat-input">
+
+        <button
+            class="icon-button"
+            id="photoButton"
+            title="Upload image">
+            📷
+        </button>
+
+        <input
+            type="file"
+            id="imageInput"
+            accept="image/*"
+        >
+
+
+        <button
+            class="icon-button"
+            id="fileButton"
+            title="Upload file">
+            📎
+        </button>
+
+        <input
+            type="file"
+            id="fileInput"
+            accept=".txt,.pdf,.csv,.json,.md,.doc,.docx"
+        >
+
+
+        <input
+            type="text"
+            id="userInput"
+            placeholder="Message Jhonny..."
+            autocomplete="off"
+        >
+
+
+        <button
+            class="send-button"
+            id="sendBtn">
+            Send
+        </button>
+
+    </div>
+
+</div>
+
+<script src="script.js"></script>
+
+</body>
+</html>
