@@ -24,7 +24,7 @@ export default async function handler(req, res) {
     if (fileBuffer && fileInfo) {
       const { filename, mimeType } = fileInfo;
 
-      // Image → use vision model
+      // ✅ IMAGE → use a VALID vision model
       if (mimeType.startsWith('image/')) {
         const base64Image = fileBuffer.toString('base64');
         const dataUrl = `data:${mimeType};base64,${base64Image}`;
@@ -42,6 +42,7 @@ export default async function handler(req, res) {
           }
         ];
 
+        // ✅ Use a valid model ID
         const visionResponse = await fetch('https://openrouter.ai/api/v1/chat/completions', {
           method: 'POST',
           headers: {
@@ -51,7 +52,7 @@ export default async function handler(req, res) {
             'X-Title': 'Jhonny Chatbox'
           },
           body: JSON.stringify({
-            model: 'google/gemini-pro-vision',
+            model: 'google/gemini-1.5-flash-latest', // ✅ FIXED model
             messages: visionMessages,
             max_tokens: 500
           })
@@ -105,6 +106,40 @@ export default async function handler(req, res) {
     const data = await response.json();
     return res.status(200).json({ reply: data.choices[0].message.content });
 
+  } catch (error) {
+    console.error('Server error:', error);
+    return res.status(500).json({ error: error.message || 'Internal server error' });
+  }
+}
+
+function parseMultipart(req) {
+  return new Promise((resolve, reject) => {
+    const busboy = Busboy({ headers: req.headers });
+    const fields = {};
+    let fileBuffer = null;
+    let fileInfo = null;
+
+    busboy.on('field', (fieldname, val) => {
+      fields[fieldname] = val;
+    });
+
+    busboy.on('file', (fieldname, file, info) => {
+      const chunks = [];
+      file.on('data', (chunk) => chunks.push(chunk));
+      file.on('end', () => {
+        fileBuffer = Buffer.concat(chunks);
+        fileInfo = info;
+      });
+    });
+
+    busboy.on('finish', () => {
+      resolve({ messagesJson: fields.messages, fileBuffer, fileInfo });
+    });
+
+    busboy.on('error', reject);
+    req.pipe(busboy);
+  });
+}
   } catch (error) {
     console.error('Server error:', error);
     return res.status(500).json({ error: error.message || 'Internal server error' });
