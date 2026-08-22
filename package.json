@@ -5,6 +5,7 @@
     "type": "module",
     "dependencies": {
         "openai": "^5.0.0",
-        "busboy": "^1.6.0"
+        "busboy": "^1.6.0",
+        "pdf-parse": "^1.1.1"
     }
 }
