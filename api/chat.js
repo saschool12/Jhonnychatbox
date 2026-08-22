@@ -6,6 +6,7 @@ export default async function handler(req, res) {
   }
 
   try {
+    // Parse the multipart form data
     const { messagesJson } = await parseMultipart(req);
 
     if (!messagesJson) {
@@ -13,11 +14,30 @@ export default async function handler(req, res) {
     }
 
     const messages = JSON.parse(messagesJson);
-    const lastMessage = messages[messages.length - 1]?.content || "nothing";
 
-    // Replace this dummy reply with your real AI call later
-    const reply = `Server got: ${lastMessage}`;
+    // 🔥 CALL OPENAI – replace the dummy reply
+    const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        model: 'gpt-3.5-turbo',
+        messages: messages,
+        max_tokens: 500
+      })
+    });
 
+    if (!openaiResponse.ok) {
+      const errorText = await openaiResponse.text();
+      throw new Error(`OpenAI error: ${openaiResponse.status} - ${errorText}`);
+    }
+
+    const data = await openaiResponse.json();
+    const reply = data.choices[0].message.content;
+
+    // Send the AI reply back
     return res.status(200).json({ reply });
 
   } catch (error) {
