@@ -108,7 +108,6 @@ body.light {
     align-items: center;
     gap: 6px;
 }
-
 .status::before {
     content: '';
     display: inline-block;
@@ -134,7 +133,6 @@ body.light {
     border-radius: 8px;
     transition: background 0.2s, color 0.2s;
 }
-
 .settings-button:hover {
     background: var(--bg-elevated);
     color: var(--text-primary);
@@ -151,11 +149,7 @@ body.light {
     padding: 0;
     border: none;
 }
-
-.burger input {
-    display: none;
-}
-
+.burger input { display: none; }
 .burger span {
     display: block;
     position: absolute;
@@ -166,53 +160,29 @@ body.light {
     opacity: 1;
     left: 0;
     transform: rotate(0deg);
-    transition: 0.25s ease-in-out;
+    transition: .25s ease-in-out;
 }
-
-.burger span:nth-of-type(1) {
-    top: 0px;
-    transform-origin: left center;
-}
-
-.burger span:nth-of-type(2) {
-    top: 50%;
-    transform: translateY(-50%);
-    transform-origin: left center;
-}
-
-.burger span:nth-of-type(3) {
-    top: 100%;
-    transform-origin: left center;
-    transform: translateY(-100%);
-}
-
+.burger span:nth-of-type(1) { top: 0px; transform-origin: left center; }
+.burger span:nth-of-type(2) { top: 50%; transform: translateY(-50%); transform-origin: left center; }
+.burger span:nth-of-type(3) { top: 100%; transform-origin: left center; transform: translateY(-100%); }
 .burger input:checked ~ span:nth-of-type(1) {
     transform: rotate(45deg);
     top: 0px;
     left: 5px;
 }
-
 .burger input:checked ~ span:nth-of-type(2) {
     width: 0%;
     opacity: 0;
 }
-
 .burger input:checked ~ span:nth-of-type(3) {
     transform: rotate(-45deg);
     top: 28px;
     left: 5px;
 }
+.burger:hover span { background: var(--text-primary); }
 
-.burger:hover span {
-    background: var(--text-primary);
-}
-
-body.light .burger span {
-    background: var(--text-secondary);
-}
-body.light .burger:hover span {
-    background: var(--text-primary);
-}
+body.light .burger span { background: var(--text-secondary); }
+body.light .burger:hover span { background: var(--text-primary); }
 
 /* ─── SETTINGS PANEL ────────────────────────────────────────────── */
 .settings-panel {
@@ -226,21 +196,16 @@ body.light .burger:hover span {
     min-width: 240px;
     display: none;
     z-index: 100;
-    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.6);
+    box-shadow: 0 16px 48px rgba(0,0,0,0.6);
     transition: background 0.3s ease, border-color 0.3s ease;
 }
-
-.settings-panel.show {
-    display: block;
-}
-
+.settings-panel.show { display: block; }
 .settings-panel h2 {
     font-size: 16px;
     font-weight: 600;
     margin-bottom: 16px;
     color: var(--text-primary);
 }
-
 .setting {
     display: flex;
     justify-content: space-between;
@@ -248,16 +213,11 @@ body.light .burger:hover span {
     padding: 10px 0;
     border-bottom: 1px solid var(--border-color);
 }
-
-.setting:last-child {
-    border-bottom: none;
-}
-
+.setting:last-child { border-bottom: none; }
 .setting span {
     font-size: 14px;
     color: var(--text-secondary);
 }
-
 .setting button {
     background: var(--bg-elevated);
     border: none;
@@ -268,10 +228,7 @@ body.light .burger:hover span {
     cursor: pointer;
     transition: background 0.2s;
 }
-
-.setting button:hover {
-    background: var(--border-color);
-}
+.setting button:hover { background: var(--border-color); }
 
 /* ─── TOGGLE SWITCH ─────────────────────────────────────────────── */
 .toggle {
@@ -285,12 +242,10 @@ body.light .burger:hover span {
     flex-shrink: 0;
     border: 1px solid var(--border-color);
 }
-
 .toggle.active {
     background: var(--accent);
     border-color: var(--accent);
 }
-
 .toggle::after {
     content: '';
     position: absolute;
@@ -302,10 +257,7 @@ body.light .burger:hover span {
     border-radius: 50%;
     transition: transform 0.3s ease;
 }
-
-.toggle.active::after {
-    transform: translateX(20px);
-}
+.toggle.active::after { transform: translateX(20px); }
 
 /* ─── MESSAGES ───────────────────────────────────────────────────── */
 .chat-messages {
@@ -329,14 +281,12 @@ body.light .burger:hover span {
     word-wrap: break-word;
     line-height: 1.6;
 }
-
 .message.user {
     align-self: flex-end;
     background: var(--accent);
     color: #ffffff;
     border-bottom-right-radius: 4px;
 }
-
 .message.assistant {
     align-self: flex-start;
     background: var(--bg-surface);
@@ -344,7 +294,6 @@ body.light .burger:hover span {
     border-bottom-left-radius: 4px;
     border: 1px solid var(--border-color);
 }
-
 @keyframes fadeIn {
     from { opacity: 0; transform: translateY(8px); }
     to { opacity: 1; transform: translateY(0); }
@@ -364,28 +313,15 @@ body.light .burger:hover span {
     display: flex;
     align-items: center;
     gap: 10px;
-    background: rgba(255, 255, 255, 0.06);
+    background: rgba(255,255,255,0.06);
     padding: 8px 14px;
     border-radius: 8px;
     margin-bottom: 8px;
 }
-
-.message.user .file-box {
-    background: rgba(255, 255, 255, 0.15);
-}
-
-body.light .file-box {
-    background: #e8ebf0;
-}
-
-body.light .message.user .file-box {
-    background: rgba(108, 99, 255, 0.15);
-}
-
-.file-icon {
-    font-size: 20px;
-}
-
+.message.user .file-box { background: rgba(255,255,255,0.15); }
+body.light .file-box { background: #e8ebf0; }
+body.light .message.user .file-box { background: rgba(108,99,255,0.15); }
+.file-icon { font-size: 20px; }
 .file-name {
     font-size: 13px;
     font-weight: 500;
@@ -404,7 +340,6 @@ body.light .message.user .file-box {
     margin-top: 8px;
     transition: background 0.2s, color 0.2s;
 }
-
 .copy-button:hover {
     background: var(--border-color);
     color: var(--text-primary);
@@ -421,7 +356,6 @@ body.light .message.user .file-box {
     display: flex;
     gap: 6px;
 }
-
 .typing-indicator span {
     width: 8px;
     height: 8px;
@@ -429,14 +363,8 @@ body.light .message.user .file-box {
     background: var(--accent);
     animation: typingBounce 1.4s infinite ease-in-out;
 }
-
-.typing-indicator span:nth-child(2) {
-    animation-delay: 0.2s;
-}
-.typing-indicator span:nth-child(3) {
-    animation-delay: 0.4s;
-}
-
+.typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
+.typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
 @keyframes typingBounce {
     0%, 60%, 100% { transform: translateY(0); }
     30% { transform: translateY(-8px); }
@@ -450,7 +378,6 @@ body.light .message.user .file-box {
     display: none;
     transition: background 0.3s ease;
 }
-
 .attachment-box {
     display: flex;
     align-items: center;
@@ -460,25 +387,13 @@ body.light .message.user .file-box {
     border-radius: 10px;
     border: 1px solid var(--border-color);
 }
-
-.attachment-icon {
-    font-size: 24px;
-}
-
-.attachment-info {
-    flex: 1;
-}
-
-.attachment-name {
-    font-size: 14px;
-    font-weight: 500;
-}
-
+.attachment-icon { font-size: 24px; }
+.attachment-info { flex: 1; }
+.attachment-name { font-size: 14px; font-weight: 500; }
 .attachment-size {
     font-size: 12px;
     color: var(--text-secondary);
 }
-
 .remove-attachment {
     background: none;
     border: none;
@@ -499,7 +414,6 @@ body.light .message.user .file-box {
     flex-shrink: 0;
     transition: background 0.3s ease, border-color 0.3s ease;
 }
-
 .icon-button {
     background: none;
     border: none;
@@ -510,21 +424,12 @@ body.light .message.user .file-box {
     border-radius: 8px;
     transition: background 0.2s, color 0.2s;
 }
-
 .icon-button:hover {
     background: var(--bg-elevated);
     color: var(--text-primary);
 }
-
-.icon-button:disabled {
-    opacity: 0.4;
-    cursor: not-allowed;
-}
-
-#imageInput,
-#fileInput {
-    display: none;
-}
+.icon-button:disabled { opacity: 0.4; cursor: not-allowed; }
+#imageInput, #fileInput { display: none; }
 
 #userInput {
     flex: 1;
@@ -537,14 +442,8 @@ body.light .message.user .file-box {
     outline: none;
     transition: border-color 0.2s, background 0.3s, color 0.3s;
 }
-
-#userInput:focus {
-    border-color: var(--accent);
-}
-
-#userInput:disabled {
-    opacity: 0.5;
-}
+#userInput:focus { border-color: var(--accent); }
+#userInput:disabled { opacity: 0.5; }
 
 .send-button {
     background: var(--accent);
@@ -558,51 +457,20 @@ body.light .message.user .file-box {
     transition: background 0.2s, opacity 0.2s;
     white-space: nowrap;
 }
-
-.send-button:hover {
-    background: var(--accent-hover);
-}
-
-.send-button:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-}
+.send-button:hover { background: var(--accent-hover); }
+.send-button:disabled { opacity: 0.5; cursor: not-allowed; }
 
 /* ─── SCROLLBAR ──────────────────────────────────────────────────── */
-.chat-messages::-webkit-scrollbar {
-    width: 6px;
-}
-
-.chat-messages::-webkit-scrollbar-track {
-    background: transparent;
-}
-
-.chat-messages::-webkit-scrollbar-thumb {
-    background: var(--border-color);
-    border-radius: 4px;
-}
+.chat-messages::-webkit-scrollbar { width: 6px; }
+.chat-messages::-webkit-scrollbar-track { background: transparent; }
+.chat-messages::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 4px; }
 
 /* ─── RESPONSIVE ────────────────────────────────────────────────── */
 @media (max-width: 600px) {
-    .chat-container {
-        height: 100vh;
-        max-height: none;
-        border-radius: 0;
-    }
-
-    .message {
-        max-width: 92%;
-    }
-
-    .settings-panel {
-        right: 10px;
-        min-width: 200px;
-    }
-
-    .send-button {
-        padding: 10px 14px;
-        font-size: 14px;
-    }
+    .chat-container { height: 100vh; max-height: none; border-radius: 0; }
+    .message { max-width: 92%; }
+    .settings-panel { right: 10px; min-width: 200px; }
+    .send-button { padding: 10px 14px; font-size: 14px; }
 }
 
 /* ─── CODE BLOCKS ────────────────────────────────────────────────── */
@@ -613,7 +481,6 @@ body.light .message.user .file-box {
     overflow: hidden;
     border: 1px solid #2a2a3a;
 }
-
 .code-header {
     display: flex;
     justify-content: space-between;
@@ -622,7 +489,6 @@ body.light .message.user .file-box {
     background: #22222e;
     border-bottom: 1px solid #2a2a3a;
 }
-
 .code-language {
     font-size: 12px;
     font-weight: 600;
@@ -630,7 +496,6 @@ body.light .message.user .file-box {
     text-transform: uppercase;
     font-family: 'Segoe UI', system-ui, sans-serif;
 }
-
 .code-copy-btn {
     background: #2a2a3a;
     color: #c0c0d0;
@@ -642,18 +507,13 @@ body.light .message.user .file-box {
     transition: background 0.2s;
     font-family: 'Segoe UI', system-ui, sans-serif;
 }
-
-.code-copy-btn:hover {
-    background: #3a3a4a;
-}
-
+.code-copy-btn:hover { background: #3a3a4a; }
 .code-pre {
     margin: 0;
     padding: 14px;
     overflow-x: auto;
     background: #1a1a24;
 }
-
 .code-code {
     font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
     font-size: 14px;
@@ -663,7 +523,6 @@ body.light .message.user .file-box {
     line-height: 1.6;
 }
 
-/* ─── Inline code ────────────────────────────────────────────────── */
 .inline-code {
     background: #22222e;
     color: #89b4fa;
@@ -672,44 +531,24 @@ body.light .message.user .file-box {
     font-family: 'JetBrains Mono', 'Consolas', monospace;
     font-size: 0.9em;
 }
+.message-content { margin-bottom: 8px; }
 
-/* ─── Message content wrapper ──────────────────────────────────── */
-.message-content {
-    margin-bottom: 8px;
-}
-
-/* ─── Light theme code blocks ──────────────────────────────────── */
 body.light .code-block {
     background: #f0f0f0;
     border-color: #d0d0d0;
 }
-
 body.light .code-header {
     background: #e0e0e0;
     border-color: #d0d0d0;
 }
-
-body.light .code-language {
-    color: #555;
-}
-
+body.light .code-language { color: #555; }
 body.light .code-copy-btn {
     background: #d0d0d0;
     color: #333;
 }
-
-body.light .code-copy-btn:hover {
-    background: #c0c0c0;
-}
-
-body.light .code-pre {
-    background: #f5f5f5;
-}
-
-body.light .code-code {
-    color: #1e1e2e;
-}
-
+body.light .code-copy-btn:hover { background: #c0c0c0; }
+body.light .code-pre { background: #f5f5f5; }
+body.light .code-code { color: #1e1e2e; }
 body.light .inline-code {
     background: #e0e0e0;
     color: #1e6fbf;
@@ -717,19 +556,19 @@ body.light .inline-code {
 
 /* ─── MARKDOWN STYLES ────────────────────────────────────────────── */
 .md-h1 {
-    font-size: calc(var(--message-font-size) * 1.6);
+    font-size: calc(var(--message-font-size)*1.6);
     font-weight: 700;
     margin: 8px 0 4px 0;
     line-height: 1.3;
 }
 .md-h2 {
-    font-size: calc(var(--message-font-size) * 1.4);
+    font-size: calc(var(--message-font-size)*1.4);
     font-weight: 600;
     margin: 6px 0 4px 0;
     line-height: 1.3;
 }
 .md-h3 {
-    font-size: calc(var(--message-font-size) * 1.2);
+    font-size: calc(var(--message-font-size)*1.2);
     font-weight: 600;
     margin: 4px 0 4px 0;
     line-height: 1.3;
@@ -738,12 +577,12 @@ body.light .inline-code {
     border-left: 4px solid var(--accent);
     padding: 4px 12px;
     margin: 6px 0;
-    background: rgba(139, 124, 247, 0.08);
+    background: rgba(139,124,247,0.08);
     border-radius: 0 6px 6px 0;
     color: var(--text-secondary);
 }
 body.light .md-quote {
-    background: rgba(108, 99, 255, 0.08);
+    background: rgba(108,99,255,0.08);
     color: #333;
 }
 .md-ul {
@@ -756,34 +595,90 @@ body.light .md-quote {
     margin: 4px 0;
     list-style-type: decimal;
 }
-.md-li {
-    margin: 2px 0;
-}
+.md-li { margin: 2px 0; }
 .message-content a {
     color: var(--accent);
     text-decoration: underline;
     word-break: break-all;
 }
-.message-content a:hover {
-    text-decoration: none;
-}
-.message-content strong {
-    font-weight: 700;
-}
-.message-content em {
-    font-style: italic;
-}
+.message-content a:hover { text-decoration: none; }
+.message-content strong { font-weight: 700; }
+.message-content em { font-style: italic; }
 .message-content del {
     text-decoration: line-through;
     opacity: 0.7;
 }
-.message.user .message-content a {
-    color: #ffffff;
-}
+.message.user .message-content a { color: #ffffff; }
 .message.user .md-quote {
     border-left-color: #ffffff;
-    background: rgba(255, 255, 255, 0.12);
+    background: rgba(255,255,255,0.12);
 }
 body.light .message.user .md-quote {
-    background: rgba(255, 255, 255, 0.2);
+    background: rgba(255,255,255,0.2);
+}
+
+/* ─── AUTH MODAL ────────────────────────────────────────────────── */
+.auth-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.7);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    backdrop-filter: blur(4px);
+}
+.auth-modal-content {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-color);
+    border-radius: 20px;
+    padding: 40px 30px;
+    width: 90%;
+    max-width: 400px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.8);
+}
+.auth-modal-content h2 {
+    text-align: center;
+    margin-bottom: 20px;
+    color: var(--text-primary);
+}
+.auth-form input {
+    width: 100%;
+    padding: 12px;
+    margin-bottom: 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    font-size: 16px;
+}
+.auth-form input:focus {
+    outline: none;
+    border-color: var(--accent);
+}
+.auth-form button {
+    width: 100%;
+    padding: 12px;
+    background: var(--accent);
+    border: none;
+    border-radius: 10px;
+    color: #fff;
+    font-size: 18px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+.auth-form button:hover { background: var(--accent-hover); }
+.auth-form p {
+    text-align: center;
+    margin-top: 15px;
+    color: var(--text-secondary);
+}
+.auth-form p a {
+    color: var(--accent);
+    cursor: pointer;
+    text-decoration: underline;
 }
