@@ -21,10 +21,11 @@ export default async function handler(req, res) {
     let finalMessages = messages;
     let isImage = false;
 
+    // ─── Process the uploaded file ─────────────────────────────────────────────
     if (fileBuffer && fileInfo) {
-      const { mimeType } = fileInfo;
+      const { filename, mimeType } = fileInfo;
 
-      // IMAGE → use vision model
+      // 1️⃣ IMAGE → use vision model
       if (mimeType.startsWith('image/')) {
         isImage = true;
         const base64Image = fileBuffer.toString('base64');
@@ -43,9 +44,54 @@ export default async function handler(req, res) {
           }
         ];
       }
+
+      // 2️⃣ PDF → extract text (with dynamic import)
+      else if (mimeType === 'application/pdf') {
+        try {
+          const pdfParse = await import('pdf-parse');
+          const pdfData = await pdfParse.default(fileBuffer);
+          const extractedText = pdfData.text.slice(0, 3000); // limit to 3000 chars
+
+          // Append extracted text to the last user message
+          const lastIndex = finalMessages.length - 1;
+          if (finalMessages[lastIndex]?.role === 'user') {
+            finalMessages[lastIndex].content += `\n\n[PDF Content]:\n${extractedText}`;
+          }
+        } catch (pdfErr) {
+          console.error('PDF parse error:', pdfErr);
+          // If parsing fails, still let the AI know the file name
+          const lastIndex = finalMessages.length - 1;
+          if (finalMessages[lastIndex]?.role === 'user') {
+            finalMessages[lastIndex].content += `\n\n[PDF file: ${filename}] (could not extract text)`;
+          }
+        }
+      }
+
+      // 3️⃣ Text files (.txt, .csv, .json, .md) → read as string
+      else if (
+        mimeType === 'text/plain' ||
+        filename.endsWith('.txt') ||
+        filename.endsWith('.csv') ||
+        filename.endsWith('.json') ||
+        filename.endsWith('.md')
+      ) {
+        const fileText = fileBuffer.toString('utf-8').slice(0, 3000);
+        const lastIndex = finalMessages.length - 1;
+        if (finalMessages[lastIndex]?.role === 'user') {
+          finalMessages[lastIndex].content += `\n\n[File: ${filename}]\n${fileText}`;
+        }
+      }
+
+      // 4️⃣ Other files (DOCX, etc.) → just mention the file name
+      else {
+        const lastIndex = finalMessages.length - 1;
+        if (finalMessages[lastIndex]?.role === 'user') {
+          finalMessages[lastIndex].content += `\n\n[Uploaded file: ${filename}]`;
+        }
+      }
     }
 
-    // ✅ Use a VALID vision model for images, otherwise use regular text model
+    // ─── Call OpenRouter ──────────────────────────────────────────────────────
     const model = isImage ? 'openai/gpt-4o' : 'openai/gpt-3.5-turbo';
 
     const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
@@ -75,7 +121,7 @@ export default async function handler(req, res) {
 
   } catch (error) {
     console.error('Server error:', error);
-    return res.status(500).json({ 
+    return res.status(500).json({
       error: error.message || 'Internal server error',
       details: error.stack || 'No stack trace'
     });
