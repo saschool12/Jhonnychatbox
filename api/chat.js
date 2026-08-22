@@ -15,7 +15,7 @@ export default async function handler(req, res) {
     const messages = JSON.parse(messagesJson);
     const lastMessage = messages[messages.length - 1]?.content || "nothing";
 
-    // 🔥 REPLACE THIS with your real AI call later
+    // Replace this dummy reply with your real AI call later
     const reply = `Server got: ${lastMessage}`;
 
     return res.status(200).json({ reply });
