@@ -17,6 +17,8 @@ document.addEventListener("DOMContentLoaded", function() {
     const settingsPanel = document.getElementById("settingsPanel");
     const themeToggle = document.getElementById("themeToggle");
     const enterToggle = document.getElementById("enterToggle");
+    const scrollToggle = document.getElementById("scrollToggle");
+    const newChatButton = document.getElementById("newChatButton");
     const clearChat = document.getElementById("clearChat");
     const exportChat = document.getElementById("exportChat");
     const resetSettings = document.getElementById("resetSettings");
@@ -31,9 +33,10 @@ document.addEventListener("DOMContentLoaded", function() {
     let selectedFile = null;
     let selectedFileData = null;
     let enterToSend = true;
+    let autoScroll = true;
 
     let conversation = [
-        { role: "system", content: "You are Jhonny, a helpful AI assistant. Analyze messages, images and files when provided." }
+        { role: "system", content: "You are Jhonny, a helpful AI assistant. Analyze messages, images and files when provided. Use markdown for formatting when appropriate." }
     ];
 
     // ─── Force enable everything ──────────────────────────────
@@ -61,6 +64,21 @@ document.addEventListener("DOMContentLoaded", function() {
         applyFontSize(16);
     }
 
+    // ─── Auto scroll toggle ──────────────────────────────────
+    if (localStorage.getItem('jhonnyAutoScroll') === 'false') {
+        autoScroll = false;
+        scrollToggle.classList.remove('active');
+    }
+
+    scrollToggle.addEventListener('click', function() {
+        autoScroll = !autoScroll;
+        scrollToggle.classList.toggle('active', autoScroll);
+        localStorage.setItem('jhonnyAutoScroll', autoScroll);
+        if (autoScroll) {
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+    });
+
     // ─── Font size slider event ──────────────────────────────
     fontSizeSlider.addEventListener('input', function() {
         const size = parseInt(this.value);
@@ -72,39 +90,96 @@ document.addEventListener("DOMContentLoaded", function() {
         messageCount.textContent = messagesContainer.querySelectorAll(".message").length;
     }
 
-    // ─── Format content (code blocks, inline code) ────────────
-    function formatMessageContent(text) {
-        let escaped = text
+    // ─── Scroll to bottom ──────────────────────────────────────
+    function scrollToBottom() {
+        if (autoScroll) {
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+    }
+
+    // ─── MARKDOWN RENDERER ────────────────────────────────────
+    function renderMarkdown(text) {
+        let html = text
+            // Escape HTML first
             .replace(/&/g, '&amp;')
             .replace(/</g, '&lt;')
             .replace(/>/g, '&gt;')
             .replace(/"/g, '&quot;')
             .replace(/'/g, '&#039;');
 
-        escaped = escaped.replace(
+        // Headers (# ## ###)
+        html = html.replace(/^### (.+)$/gm, '<h3 class="md-h3">$1</h3>');
+        html = html.replace(/^## (.+)$/gm, '<h2 class="md-h2">$1</h2>');
+        html = html.replace(/^# (.+)$/gm, '<h1 class="md-h1">$1</h1>');
+
+        // Bold **text** or __text__
+        html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+        html = html.replace(/__(.+?)__/g, '<strong>$1</strong>');
+
+        // Italic *text* or _text_
+        html = html.replace(/\*(.+?)\*/g, '<em>$1</em>');
+        html = html.replace(/_(.+?)_/g, '<em>$1</em>');
+
+        // Strikethrough ~~text~~
+        html = html.replace(/~~(.+?)~~/g, '<del>$1</del>');
+
+        // Links [text](url)
+        html = html.replace(/\[(.+?)\]\((.+?)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
+
+        // Blockquotes > text
+        html = html.replace(/^&gt; (.+)$/gm, '<blockquote class="md-quote">$1</blockquote>');
+
+        // Unordered lists - * item or - item
+        html = html.replace(/^[\*\-] (.+)$/gm, '<li class="md-li">$1</li>');
+        html = html.replace(/(<li class="md-li">.*<\/li>\n?)+/g, '<ul class="md-ul">$&</ul>');
+
+        // Ordered lists - 1. item
+        html = html.replace(/^(\d+)\. (.+)$/gm, '<li class="md-li">$2</li>');
+        html = html.replace(/(<li class="md-li">.*<\/li>\n?)+/g, (match) => {
+            return '<ol class="md-ol">' + match + '</ol>';
+        });
+
+        // Inline code `code` (non-block, already escaped)
+        html = html.replace(/`([^`]+)`/g, '<code class="inline-code">$1</code>');
+
+        // Newlines to <br>
+        html = html.replace(/\n/g, '<br>');
+
+        return html;
+    }
+
+    // ─── Format content (code blocks + markdown) ─────────────
+    function formatMessageContent(text) {
+        let blocks = [];
+        let processed = text.replace(
             /```(\w*)\s*([\s\S]*?)```/g,
             function(match, language, code) {
                 code = code.replace(/^\s+|\s+$/g, '');
                 const lang = language || 'plaintext';
-                return `
-                    <div class="code-block">
-                        <div class="code-header">
-                            <span class="code-language">${lang}</span>
-                            <button class="code-copy-btn">Copy</button>
-                        </div>
-                        <pre class="code-pre"><code class="code-code">${code}</code></pre>
-                    </div>
-                `;
+                const id = blocks.length;
+                blocks.push({ lang, code });
+                return `%%CODEBLOCK_${id}%%`;
             }
         );
 
-        escaped = escaped.replace(
-            /`([^`]+)`/g,
-            '<code class="inline-code">$1</code>'
-        );
+        let html = renderMarkdown(processed);
 
-        escaped = escaped.replace(/\n/g, '<br>');
-        return escaped;
+        blocks.forEach((block, i) => {
+            html = html.replace(
+                `%%CODEBLOCK_${i}%%`,
+                `
+                    <div class="code-block">
+                        <div class="code-header">
+                            <span class="code-language">${block.lang}</span>
+                            <button class="code-copy-btn">Copy</button>
+                        </div>
+                        <pre class="code-pre"><code class="code-code">${block.code}</code></pre>
+                    </div>
+                `
+            );
+        });
+
+        return html;
     }
 
     // ─── Add message ──────────────────────────────────────────
@@ -157,7 +232,7 @@ document.addEventListener("DOMContentLoaded", function() {
         }
 
         messagesContainer.appendChild(message);
-        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        scrollToBottom();
         updateMessageCount();
     }
 
@@ -183,7 +258,7 @@ document.addEventListener("DOMContentLoaded", function() {
         typing.id = "typingIndicator";
         typing.innerHTML = `<span></span><span></span><span></span>`;
         messagesContainer.appendChild(typing);
-        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        scrollToBottom();
     }
     function removeTyping() {
         const typing = document.getElementById("typingIndicator");
@@ -245,6 +320,16 @@ document.addEventListener("DOMContentLoaded", function() {
         imageInput.value = "";
         fileInput.value = "";
         attachmentPreview.style.display = "none";
+    });
+
+    // ─── NEW CHAT ──────────────────────────────────────────────
+    newChatButton.addEventListener("click", function() {
+        if (messagesContainer.querySelectorAll(".message").length > 1) {
+            if (!confirm("Start a new conversation? Current chat will be cleared.")) return;
+        }
+        messagesContainer.innerHTML = "";
+        conversation = [{ role: "system", content: "You are Jhonny, a helpful AI assistant. Analyze messages, images and files when provided. Use markdown for formatting when appropriate." }];
+        addMessage("Hello! I'm Jhonny. How can I help you today?", "assistant");
     });
 
     // ─── SEND MESSAGE ──────────────────────────────────────────
@@ -323,12 +408,20 @@ document.addEventListener("DOMContentLoaded", function() {
     settingsButton.addEventListener("click", function(e) {
         e.stopPropagation();
         settingsPanel.classList.toggle("show");
+        // Sync burger checkbox
+        const burgerCheckbox = document.getElementById("burgerCheckbox");
+        if (burgerCheckbox) {
+            burgerCheckbox.checked = settingsPanel.classList.contains("show");
+        }
     });
     settingsPanel.addEventListener("click", function(e) {
         e.stopPropagation();
     });
     document.addEventListener("click", function() {
         settingsPanel.classList.remove("show");
+        // Uncheck burger when panel closes
+        const burgerCheckbox = document.getElementById("burgerCheckbox");
+        if (burgerCheckbox) burgerCheckbox.checked = false;
     });
 
     // ─── Theme ──────────────────────────────────────────────────
@@ -352,7 +445,7 @@ document.addEventListener("DOMContentLoaded", function() {
     clearChat.addEventListener("click", function() {
         if (!confirm("Clear this conversation?")) return;
         messagesContainer.innerHTML = "";
-        conversation = [{ role: "system", content: "You are Jhonny, a helpful AI assistant." }];
+        conversation = [{ role: "system", content: "You are Jhonny, a helpful AI assistant. Analyze messages, images and files when provided. Use markdown for formatting when appropriate." }];
         addMessage("Hello! I'm Jhonny. How can I help you today?", "assistant");
     });
 
@@ -381,8 +474,11 @@ document.addEventListener("DOMContentLoaded", function() {
         themeToggle.classList.remove("active");
         enterToSend = true;
         enterToggle.classList.add("active");
+        autoScroll = true;
+        scrollToggle.classList.add("active");
         localStorage.removeItem("jhonnyTheme");
         localStorage.removeItem("jhonnyFontSize");
+        localStorage.removeItem("jhonnyAutoScroll");
         applyFontSize(16);
     });
 
