@@ -1,18 +1,35 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Jhonnychatbox</title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="style.css" />
 </head>
 <body>
 
+<!-- ===== AUTH MODAL ===== -->
+<div id="authModal" class="auth-modal">
+    <div class="auth-modal-content">
+        <h2 id="authTitle">Login</h2>
+        <div class="auth-form">
+            <input type="text" id="authUsername" placeholder="Username" required />
+            <input type="password" id="authPassword" placeholder="Password" required />
+            <button id="authSubmitBtn">Login</button>
+            <p id="authSwitchText">
+                Don't have an account? <a href="#" id="authSwitchLink">Register</a>
+            </p>
+            <div id="authError" style="color: #ff6b6b; margin-top: 10px;"></div>
+        </div>
+    </div>
+</div>
+
+<!-- ===== CHAT CONTAINER ===== -->
 <div class="chat-container">
 
+    <!-- HEADER -->
     <header class="chat-header">
-        <!-- Logo -->
-        <img class="chat-logo" src="https://cdn-icons-png.flaticon.com/512/4712/4712130.png" alt="Jhonnychatbox">
+        <img class="chat-logo" src="https://cdn-icons-png.flaticon.com/512/4712/4712130.png" alt="Jhonnychatbox" />
         <div class="header-text">
             <div class="header-title">Jhonnychatbox</div>
             <div class="status">Online</div>
@@ -20,7 +37,7 @@
         <div style="display:flex;align-items:center;gap:8px;">
             <button class="settings-button" id="newChatButton" title="New Chat">➕</button>
             <label class="burger" id="settingsButton" title="Settings">
-                <input type="checkbox" id="burgerCheckbox">
+                <input type="checkbox" id="burgerCheckbox" />
                 <span></span>
                 <span></span>
                 <span></span>
@@ -28,56 +45,29 @@
         </div>
     </header>
 
+    <!-- SETTINGS PANEL -->
     <div class="settings-panel" id="settingsPanel">
         <h2>Settings</h2>
-
-        <!-- Font Size -->
         <div class="setting">
             <span>Font Size</span>
             <div style="display:flex;align-items:center;gap:8px;flex:1;justify-content:flex-end;">
                 <span id="fontSizeLabel">16px</span>
-                <input type="range" id="fontSizeSlider" min="12" max="24" value="16" step="1" style="width:100px;">
+                <input type="range" id="fontSizeSlider" min="12" max="24" value="16" step="1" style="width:100px;" />
             </div>
         </div>
-
-        <div class="setting">
-            <span>Light Mode</span>
-            <div class="toggle" id="themeToggle"></div>
-        </div>
-
-        <div class="setting">
-            <span>Enter to Send</span>
-            <div class="toggle active" id="enterToggle"></div>
-        </div>
-
-        <div class="setting">
-            <span>Auto Scroll</span>
-            <div class="toggle active" id="scrollToggle"></div>
-        </div>
-
-        <div class="setting">
-            <span>Messages</span>
-            <span id="messageCount">0</span>
-        </div>
-
-        <div class="setting">
-            <span>Clear Chat</span>
-            <button id="clearChat">Clear</button>
-        </div>
-
-        <div class="setting">
-            <span>Export Chat</span>
-            <button id="exportChat">Export</button>
-        </div>
-
-        <div class="setting">
-            <span>Reset</span>
-            <button id="resetSettings">Reset</button>
-        </div>
+        <div class="setting"><span>Light Mode</span><div class="toggle" id="themeToggle"></div></div>
+        <div class="setting"><span>Enter to Send</span><div class="toggle active" id="enterToggle"></div></div>
+        <div class="setting"><span>Auto Scroll</span><div class="toggle active" id="scrollToggle"></div></div>
+        <div class="setting"><span>Messages</span><span id="messageCount">0</span></div>
+        <div class="setting"><span>Clear Chat</span><button id="clearChat">Clear</button></div>
+        <div class="setting"><span>Export Chat</span><button id="exportChat">Export</button></div>
+        <div class="setting"><span>Reset</span><button id="resetSettings">Reset</button></div>
     </div>
 
+    <!-- MESSAGES -->
     <main class="chat-messages" id="chatMessages"></main>
 
+    <!-- ATTACHMENT PREVIEW -->
     <div class="attachment-preview" id="attachmentPreview">
         <div class="attachment-box">
             <div class="attachment-icon" id="attachmentIcon">📄</div>
@@ -89,12 +79,13 @@
         </div>
     </div>
 
+    <!-- INPUT AREA -->
     <div class="chat-input">
         <button class="icon-button" id="photoButton" title="Upload image">📷</button>
-        <input type="file" id="imageInput" accept="image/*">
+        <input type="file" id="imageInput" accept="image/*" />
         <button class="icon-button" id="fileButton" title="Upload file">📎</button>
-        <input type="file" id="fileInput" accept=".txt,.pdf,.csv,.json,.md,.doc,.docx">
-        <input type="text" id="userInput" placeholder="Message Jhonny..." autocomplete="off">
+        <input type="file" id="fileInput" accept=".txt,.pdf,.csv,.json,.md,.doc,.docx" />
+        <input type="text" id="userInput" placeholder="Message Jhonny..." autocomplete="off" />
         <button class="send-button" id="sendBtn">Send</button>
     </div>
 
