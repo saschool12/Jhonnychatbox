@@ -14,17 +14,16 @@ export default async function handler(req, res) {
     const geminiKey = process.env.GEMINI_API_KEY;
     const nvidiaKey = process.env.NVIDIA_API_KEY;
     const openRouterKey = process.env.OPENROUTER_API_KEY;
-    const provider = process.env.API_PROVIDER || ''; // optional override
+    const provider = (process.env.API_PROVIDER || '').toLowerCase();
 
-    // ─── Select API provider ──────────────────────────────────
     let apiProvider;
     if (provider) {
-      apiProvider = provider.toLowerCase();
+      apiProvider = provider;
     } else {
       if (geminiKey) apiProvider = 'gemini';
       else if (nvidiaKey) apiProvider = 'nvidia';
       else if (openRouterKey) apiProvider = 'openrouter';
-      else throw new Error('No API key found – set GEMINI_API_KEY, NVIDIA_API_KEY, or OPENROUTER_API_KEY');
+      else throw new Error('No API key found – set one of GEMINI_API_KEY, NVIDIA_API_KEY, or OPENROUTER_API_KEY');
     }
 
     // ─── Process uploaded file ──────────────────────────────
@@ -36,6 +35,7 @@ export default async function handler(req, res) {
     if (fileBuffer && fileInfo) {
       const { filename, mimeType } = fileInfo;
 
+      // 🔹 IMAGE
       if (mimeType.startsWith('image/')) {
         isImage = true;
         imageBase64 = fileBuffer.toString('base64');
@@ -43,12 +43,10 @@ export default async function handler(req, res) {
         const lastUserMsg = messages.filter(m => m.role === 'user').pop();
         const userText = lastUserMsg ? lastUserMsg.content : 'Analyze this image.';
 
-        // For Gemini, we'll handle differently; for OpenAI-compatible, use image_url
+        // For Gemini we handle differently; for OpenAI‑compatible we use image_url
         if (apiProvider === 'gemini') {
-          // Keep messages as plain text for Gemini (we'll add image in the payload)
-          finalMessages = messages;
+          finalMessages = messages; // Gemini gets image separately
         } else {
-          // OpenRouter / NVIDIA (OpenAI-compatible)
           finalMessages = [
             ...messages.slice(0, -1),
             {
@@ -60,8 +58,96 @@ export default async function handler(req, res) {
             }
           ];
         }
-      } else {
-        // Non-image file – just mention the name (we can add full parsing later)
+      }
+
+      // 🔹 PDF
+      else if (mimeType === 'application/pdf' || filename.endsWith('.pdf')) {
+        try {
+          const pdfParse = await import('pdf-parse');
+          const pdfData = await pdfParse.default(fileBuffer);
+          const extracted = pdfData.text.slice(0, 3000);
+          const lastIndex = finalMessages.length - 1;
+          if (finalMessages[lastIndex]?.role === 'user') {
+            finalMessages[lastIndex].content += `\n\n[PDF Content]:\n${extracted}`;
+          }
+        } catch (err) {
+          console.warn('PDF parse skipped:', err.message);
+          const lastIndex = finalMessages.length - 1;
+          if (finalMessages[lastIndex]?.role === 'user') {
+            finalMessages[lastIndex].content += `\n\n[Uploaded PDF: ${filename}] (text extraction unavailable)`;
+          }
+        }
+      }
+
+      // 🔹 Word (.docx)
+      else if (
+        mimeType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
+        filename.endsWith('.docx')
+      ) {
+        try {
+          const mammoth = await import('mammoth');
+          const result = await mammoth.extractRawText({ buffer: fileBuffer });
+          const extracted = result.value.slice(0, 3000);
+          const lastIndex = finalMessages.length - 1;
+          if (finalMessages[lastIndex]?.role === 'user') {
+            finalMessages[lastIndex].content += `\n\n[Word Document Content]:\n${extracted}`;
+          }
+        } catch (err) {
+          console.warn('DOCX parse skipped:', err.message);
+          const lastIndex = finalMessages.length - 1;
+          if (finalMessages[lastIndex]?.role === 'user') {
+            finalMessages[lastIndex].content += `\n\n[Uploaded Word document: ${filename}]`;
+          }
+        }
+      }
+
+      // 🔹 Excel (.xlsx, .xls)
+      else if (
+        mimeType === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ||
+        mimeType === 'application/vnd.ms-excel' ||
+        filename.endsWith('.xlsx') ||
+        filename.endsWith('.xls')
+      ) {
+        try {
+          const XLSX = await import('xlsx');
+          const workbook = XLSX.read(fileBuffer, { type: 'buffer' });
+          let sheetText = '';
+          workbook.SheetNames.forEach((sheetName) => {
+            const sheet = workbook.Sheets[sheetName];
+            const json = XLSX.utils.sheet_to_json(sheet);
+            sheetText += `\n[Sheet: ${sheetName}]\n${JSON.stringify(json, null, 2).slice(0, 1000)}\n`;
+          });
+          const extracted = sheetText.slice(0, 3000);
+          const lastIndex = finalMessages.length - 1;
+          if (finalMessages[lastIndex]?.role === 'user') {
+            finalMessages[lastIndex].content += `\n\n[Excel Content]:\n${extracted}`;
+          }
+        } catch (err) {
+          console.warn('Excel parse skipped:', err.message);
+          const lastIndex = finalMessages.length - 1;
+          if (finalMessages[lastIndex]?.role === 'user') {
+            finalMessages[lastIndex].content += `\n\n[Uploaded Excel file: ${filename}]`;
+          }
+        }
+      }
+
+      // 🔹 Plain text files (.txt, .csv, .json, .md)
+      else if (
+        mimeType === 'text/plain' ||
+        filename.endsWith('.txt') ||
+        filename.endsWith('.csv') ||
+        filename.endsWith('.json') ||
+        filename.endsWith('.md')
+      ) {
+        const fileText = fileBuffer.toString('utf-8').slice(0, 3000);
+        const lastIndex = finalMessages.length - 1;
+        if (finalMessages[lastIndex]?.role === 'user') {
+          finalMessages[lastIndex].content += `\n\n[File: ${filename}]\n${fileText}`;
+        }
+      }
+
+      // 🔹 Any other file – just mention the name
+      else {
         const lastIndex = finalMessages.length - 1;
         if (finalMessages[lastIndex]?.role === 'user') {
           finalMessages[lastIndex].content += `\n\n[Uploaded file: ${filename}]`;
@@ -69,11 +155,11 @@ export default async function handler(req, res) {
       }
     }
 
-    // ─── Call the selected API ──────────────────────────────
+    // ─── Call the appropriate API ──────────────────────────
     let reply;
 
     if (apiProvider === 'gemini') {
-      reply = await callGemini(geminiKey, messages, isImage, imageBase64, imageMime);
+      reply = await callGemini(geminiKey, finalMessages, isImage, imageBase64, imageMime);
     } else if (apiProvider === 'nvidia') {
       reply = await callNVIDIA(nvidiaKey, finalMessages, isImage);
     } else if (apiProvider === 'openrouter') {
@@ -94,7 +180,6 @@ export default async function handler(req, res) {
 
 // ─── Gemini API ──────────────────────────────────────────────
 async function callGemini(apiKey, messages, isImage, imageBase64, imageMime) {
-  // Convert messages to Gemini format
   const contents = messages.map(msg => ({
     role: msg.role === 'user' ? 'user' : 'model',
     parts: [{ text: msg.content }]
@@ -103,7 +188,6 @@ async function callGemini(apiKey, messages, isImage, imageBase64, imageMime) {
   let finalContents = contents;
 
   if (isImage && imageBase64) {
-    // Replace last user message with multimodal content
     const lastUserMsg = contents.filter(c => c.role === 'user').pop();
     const text = lastUserMsg?.parts?.[0]?.text || 'Analyze this image.';
     finalContents = [
@@ -118,7 +202,7 @@ async function callGemini(apiKey, messages, isImage, imageBase64, imageMime) {
     ];
   }
 
-  const model = isImage ? 'gemini-1.5-flash' : 'gemini-1.5-flash'; // or gemini-pro
+  const model = isImage ? 'gemini-1.5-flash' : 'gemini-1.5-flash';
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
 
   const response = await fetch(url, {
@@ -139,7 +223,7 @@ async function callGemini(apiKey, messages, isImage, imageBase64, imageMime) {
   return data.candidates?.[0]?.content?.parts?.[0]?.text || 'No response from Gemini.';
 }
 
-// ─── NVIDIA NIM (OpenAI‑compatible) ─────────────────────────
+// ─── NVIDIA NIM ─────────────────────────────────────────────
 async function callNVIDIA(apiKey, messages, isImage) {
   const model = isImage ? 'nvidia/neva-22b' : 'mistralai/mistral-7b-instruct-v0.2';
   const response = await fetch('https://integrate.api.nvidia.com/v1/chat/completions', {
@@ -165,7 +249,7 @@ async function callNVIDIA(apiKey, messages, isImage) {
   return data.choices[0].message.content;
 }
 
-// ─── OpenRouter (OpenAI‑compatible) ─────────────────────────
+// ─── OpenRouter ──────────────────────────────────────────────
 async function callOpenRouter(apiKey, messages, isImage) {
   const model = isImage ? 'openai/gpt-4o' : 'openai/gpt-3.5-turbo';
   const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
@@ -193,7 +277,7 @@ async function callOpenRouter(apiKey, messages, isImage) {
   return data.choices[0].message.content;
 }
 
-// ─── Helper: Parse multipart/form-data ──────────────────────
+// ─── Helper: parse multipart/form-data ────────────────────
 function parseMultipart(req) {
   return new Promise((resolve, reject) => {
     const busboy = Busboy({ headers: req.headers });
