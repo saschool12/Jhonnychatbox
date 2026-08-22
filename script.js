@@ -329,7 +329,7 @@ document.addEventListener("DOMContentLoaded", function() {
         }
         messagesContainer.innerHTML = "";
         conversation = [{ role: "system", content: "You are Jhonny, a helpful AI assistant. Analyze messages, images and files when provided. Use markdown for formatting when appropriate." }];
-        addMessage("Hello! I'm Jhonny. How can I help you today?", "assistant");
+        addMessage("Hello! I'm Jhonny. How can I help you?", "assistant");
     });
 
     // ─── SEND MESSAGE ──────────────────────────────────────────
@@ -446,7 +446,7 @@ document.addEventListener("DOMContentLoaded", function() {
         if (!confirm("Clear this conversation?")) return;
         messagesContainer.innerHTML = "";
         conversation = [{ role: "system", content: "You are Jhonny, a helpful AI assistant. Analyze messages, images and files when provided. Use markdown for formatting when appropriate." }];
-        addMessage("Hello! I'm Jhonny. How can I help you today?", "assistant");
+        addMessage("Hello! I'm Jhonny. How can I help you?", "assistant");
     });
 
     // ─── Export chat ────────────────────────────────────────────
@@ -484,6 +484,6 @@ document.addEventListener("DOMContentLoaded", function() {
 
     // ─── START ──────────────────────────────────────────────────
     enableAll();
-    addMessage("Hello! I'm Jhonny. How can I help you today?", "assistant");
+    addMessage("Hello! I'm Jhonny. How can I help you?", "assistant");
 
 });
