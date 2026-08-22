@@ -4,6 +4,7 @@
     "private": true,
     "type": "module",
     "dependencies": {
-        "openai": "^5.0.0"
+        "openai": "^5.0.0",
+        "busboy": "^1.6.0"
     }
 }
