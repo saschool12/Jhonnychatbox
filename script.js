@@ -64,9 +64,15 @@ document.addEventListener("DOMContentLoaded", () => {
     let enterToSend =
         localStorage.getItem("jhonnyEnter") !== "false";
 
-    let chats = JSON.parse(
-        localStorage.getItem("jhonnyChats") || "[]"
-    );
+    let chats = [];
+
+    try {
+        chats = JSON.parse(
+            localStorage.getItem("jhonnyChats") || "[]"
+        );
+    } catch {
+        chats = [];
+    }
 
     let currentChat = null;
 
@@ -89,9 +95,22 @@ document.addEventListener("DOMContentLoaded", () => {
 
         if (currentUser) {
             usernameDisplay.textContent = currentUser;
+
             userAvatar.textContent =
                 currentUser.charAt(0).toUpperCase();
         }
+    }
+
+    function showAuthError(message, success = false) {
+        authError.textContent = message;
+
+        authError.style.color =
+            success ? "#77ff99" : "#ff7777";
+    }
+
+    function setAuthButton(text, disabled = false) {
+        authSubmitBtn.textContent = text;
+        authSubmitBtn.disabled = disabled;
     }
 
     if (token && currentUser) {
@@ -107,8 +126,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 ? "register"
                 : "login";
 
-        authError.textContent = "";
-        authError.style.color = "#ff7777";
+        showAuthError("");
 
         if (authMode === "login") {
             authTitle.textContent = "Welcome back";
@@ -130,29 +148,102 @@ document.addEventListener("DOMContentLoaded", () => {
                 </a>`;
         }
 
-        const newSwitchLink =
-            $("authSwitchLink");
+        const link = $("authSwitchLink");
 
-        if (newSwitchLink) {
-            newSwitchLink.addEventListener(
-                "click",
-                (e) => {
-                    e.preventDefault();
-                    switchAuthMode();
-                }
-            );
+        if (link) {
+            link.addEventListener("click", (event) => {
+                event.preventDefault();
+                switchAuthMode();
+            });
         }
     }
 
     authSwitchLink.addEventListener(
         "click",
-        (e) => {
-            e.preventDefault();
+        (event) => {
+            event.preventDefault();
             switchAuthMode();
         }
     );
 
-    authSubmitBtn.addEventListener(
+    async function authenticate(username, password) {
+        const endpoint =
+            authMode === "login"
+                ? "/api/login"
+                : "/api/register";
+
+        const controller = new AbortController();
+
+        const timeout = setTimeout(() => {
+            controller.abort();
+        }, 15000);
+
+        let response;
+
+        try {
+            response = await fetch(
+                endpoint,
+                {
+                    method: "POST",
+
+                    headers: {
+                        "Content-Type":
+                            "application/json",
+
+                        "Accept":
+                            "application/json"
+                    },
+
+                    body: JSON.stringify({
+                        username,
+                        password
+                    }),
+
+                    signal: controller.signal
+                }
+            );
+        } catch (error) {
+            if (error.name === "AbortError") {
+                throw new Error(
+                    "The server took too long to respond. Check your Vercel API."
+                );
+            }
+
+            throw new Error(
+                "Cannot connect to the server."
+            );
+        } finally {
+            clearTimeout(timeout);
+        }
+
+        const responseText =
+            await response.text();
+
+        let data = {};
+
+        try {
+            data =
+                responseText
+                    ? JSON.parse(responseText)
+                    : {};
+        } catch {
+            throw new Error(
+                responseText ||
+                `Server returned HTTP ${response.status}`
+            );
+        }
+
+        if (!response.ok) {
+            throw new Error(
+                data.error ||
+                data.message ||
+                `Request failed with HTTP ${response.status}`
+            );
+        }
+
+        return data;
+    }
+        authSubmitBtn.addEventListener(
         "click",
         async () => {
             const username =
@@ -161,90 +252,58 @@ document.addEventListener("DOMContentLoaded", () => {
             const password =
                 authPassword.value;
 
-            authError.style.color = "#ff7777";
+            showAuthError("");
 
             if (!username || !password) {
-                authError.textContent =
-                    "Please enter your username and password.";
+                showAuthError(
+                    "Please enter your username and password."
+                );
+
                 return;
             }
 
             if (authMode === "register") {
                 if (username.length < 3) {
-                    authError.textContent =
-                        "Username must be at least 3 characters.";
+                    showAuthError(
+                        "Username must be at least 3 characters."
+                    );
+
                     return;
                 }
 
                 if (password.length < 6) {
-                    authError.textContent =
-                        "Password must be at least 6 characters.";
+                    showAuthError(
+                        "Password must be at least 6 characters."
+                    );
+
                     return;
                 }
             }
 
-            authSubmitBtn.disabled = true;
-            authSubmitBtn.textContent =
-                authMode === "login"
-                    ? "Logging in..."
-                    : "Creating account...";
+            if (authMode === "login") {
+                setAuthButton(
+                    "Logging in...",
+                    true
+                );
+            } else {
+                setAuthButton(
+                    "Creating account...",
+                    true
+                );
+            }
 
             try {
-                const endpoint =
-                    authMode === "login"
-                        ? "/api/login"
-                        : "/api/register";
-
-                const response = await fetch(
-                    endpoint,
-                    {
-                        method: "POST",
-
-                        headers: {
-                            "Content-Type":
-                                "application/json",
-                            "Accept":
-                                "application/json"
-                        },
-
-                        body: JSON.stringify({
-                            username,
-                            password
-                        })
-                    }
-                );
-
-                const responseText =
-                    await response.text();
-
-                let data;
-
-                try {
-                    data =
-                        responseText
-                            ? JSON.parse(responseText)
-                            : {};
-                } catch {
-                    throw new Error(
-                        responseText ||
-                        `Server returned HTTP ${response.status}`
+                const data =
+                    await authenticate(
+                        username,
+                        password
                     );
-                }
-
-                if (!response.ok) {
-                    throw new Error(
-                        data.error ||
-                        data.message ||
-                        `Request failed with HTTP ${response.status}`
-                    );
-                }
 
                 if (authMode === "register") {
-                    authError.style.color =
-                        "#77ff99";
-
-                    authError.textContent =
-                        "Account created! You can now log in.";
+                    showAuthError(
+                        "Account created successfully! You can now log in.",
+                        true
+                    );
 
                     authMode = "login";
 
@@ -261,7 +320,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
                 if (!data.token) {
                     throw new Error(
-                        "Login succeeded but the server did not return a token."
+                        "The server did not return a login token."
                     );
                 }
 
@@ -294,20 +353,43 @@ document.addEventListener("DOMContentLoaded", () => {
                     error
                 );
 
-                authError.style.color =
-                    "#ff7777";
-
-                authError.textContent =
+                showAuthError(
                     error.message ||
-                    "Unable to connect to the server.";
+                    "Login failed."
+                );
 
             } finally {
-                authSubmitBtn.disabled = false;
+                if (authMode === "login") {
+                    setAuthButton(
+                        "Login",
+                        false
+                    );
+                } else {
+                    setAuthButton(
+                        "Register",
+                        false
+                    );
+                }
+            }
+        }
+    );
 
-                authSubmitBtn.textContent =
-                    authMode === "login"
-                        ? "Login"
-                        : "Register";
+    authPassword.addEventListener(
+        "keydown",
+        (event) => {
+            if (event.key === "Enter") {
+                event.preventDefault();
+                authSubmitBtn.click();
+            }
+        }
+    );
+
+    authUsername.addEventListener(
+        "keydown",
+        (event) => {
+            if (event.key === "Enter") {
+                event.preventDefault();
+                authPassword.focus();
             }
         }
     );
@@ -348,7 +430,9 @@ document.addEventListener("DOMContentLoaded", () => {
     function saveCurrentChat() {
         if (!currentChat) return;
 
-        if (!currentChat.messages.length) return;
+        if (!currentChat.messages.length) {
+            return;
+        }
 
         const existing =
             chats.findIndex(
@@ -434,6 +518,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 content:
                     "You are Jhonny, a helpful AI assistant. Give clear, accurate and useful answers. Use Markdown when helpful."
             },
+
             ...chat.messages.map(
                 (message) => ({
                     role: message.role,
@@ -586,8 +671,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         return html;
     }
-
-    function addMessage(
+        function addMessage(
         content,
         role,
         image = null,
@@ -633,6 +717,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 document.createElement("img");
 
             img.src = image;
+
             img.className =
                 "message-image";
 
@@ -643,7 +728,8 @@ document.addEventListener("DOMContentLoaded", () => {
             const fileBox =
                 document.createElement("div");
 
-            fileBox.className = "file-box";
+            fileBox.className =
+                "file-box";
 
             fileBox.innerHTML = `
                 <div class="file-icon">
@@ -684,9 +770,11 @@ document.addEventListener("DOMContentLoaded", () => {
                 "click",
                 async () => {
                     try {
-                        await navigator.clipboard.writeText(
-                            content
-                        );
+                        await navigator
+                            .clipboard
+                            .writeText(
+                                content
+                            );
 
                         copy.textContent =
                             "Copied!";
@@ -698,7 +786,11 @@ document.addEventListener("DOMContentLoaded", () => {
                             },
                             1500
                         );
-                    } catch {}
+
+                    } catch {
+                        copy.textContent =
+                            "Failed";
+                    }
                 }
             );
 
@@ -753,7 +845,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
         scrollToBottom();
     }
-        async function sendMessage() {
+
+    async function sendMessage() {
         const text =
             input.value.trim();
 
@@ -818,7 +911,9 @@ document.addEventListener("DOMContentLoaded", () => {
             selectedFile;
 
         input.value = "";
-        input.style.height = "auto";
+
+        input.style.height =
+            "auto";
 
         removeSelectedFile();
 
@@ -861,26 +956,46 @@ document.addEventListener("DOMContentLoaded", () => {
                 );
             }
 
-            const response =
-                await fetch(
-                    "/api/chat",
-                    {
-                        method: "POST",
+            const controller =
+                new AbortController();
 
-                        headers: {
-                            Authorization:
-                                `Bearer ${token}`
-                        },
-
-                        body:
-                            formData
-                    }
+            const timeout =
+                setTimeout(
+                    () => {
+                        controller.abort();
+                    },
+                    60000
                 );
+
+            let response;
+
+            try {
+                response =
+                    await fetch(
+                        "/api/chat",
+                        {
+                            method: "POST",
+
+                            headers: {
+                                Authorization:
+                                    `Bearer ${token}`
+                            },
+
+                            body:
+                                formData,
+
+                            signal:
+                                controller.signal
+                        }
+                    );
+            } finally {
+                clearTimeout(timeout);
+            }
 
             const responseText =
                 await response.text();
 
-            let data;
+            let data = {};
 
             try {
                 data =
@@ -906,7 +1021,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 throw new Error(
                     data.error ||
                     data.message ||
-                    "AI request failed."
+                    `AI request failed (${response.status})`
                 );
             }
 
@@ -970,13 +1085,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
     input.addEventListener(
         "keydown",
-        (e) => {
+        (event) => {
             if (
-                e.key === "Enter" &&
-                !e.shiftKey &&
+                event.key === "Enter" &&
+                !event.shiftKey &&
                 enterToSend
             ) {
-                e.preventDefault();
+                event.preventDefault();
                 sendMessage();
             }
         }
@@ -985,7 +1100,8 @@ document.addEventListener("DOMContentLoaded", () => {
     input.addEventListener(
         "input",
         () => {
-            input.style.height = "auto";
+            input.style.height =
+                "auto";
 
             input.style.height =
                 Math.min(
@@ -1026,23 +1142,26 @@ document.addEventListener("DOMContentLoaded", () => {
                     "Please select an image."
                 );
 
+                imageInput.value = "";
+
                 return;
             }
 
             const reader =
                 new FileReader();
 
-            reader.onload = (e) => {
-                selectedImage =
-                    e.target.result;
+            reader.onload =
+                (event) => {
+                    selectedImage =
+                        event.target.result;
 
-                selectedFile = null;
+                    selectedFile = null;
 
-                showAttachment(
-                    file,
-                    true
-                );
-            };
+                    showAttachment(
+                        file,
+                        true
+                    );
+                };
 
             reader.readAsDataURL(file);
         }
@@ -1136,8 +1255,7 @@ document.addEventListener("DOMContentLoaded", () => {
         "click",
         removeSelectedFile
     );
-
-    newChatButton.addEventListener(
+        newChatButton.addEventListener(
         "click",
         () => {
             createNewChat(true);
@@ -1155,20 +1273,22 @@ document.addEventListener("DOMContentLoaded", () => {
         .querySelectorAll(
             ".suggestions button"
         )
-        .forEach((button) => {
-            button.addEventListener(
-                "click",
-                () => {
-                    input.value =
-                        button.dataset
-                            .prompt;
+        .forEach(
+            (button) => {
+                button.addEventListener(
+                    "click",
+                    () => {
+                        input.value =
+                            button.dataset
+                                .prompt;
 
-                    input.focus();
+                        input.focus();
 
-                    sendMessage();
-                }
-            );
-        });
+                        sendMessage();
+                    }
+                );
+            }
+        );
 
     searchChats.addEventListener(
         "input",
@@ -1199,9 +1319,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
     settingsOverlay.addEventListener(
         "click",
-        (e) => {
+        (event) => {
             if (
-                e.target ===
+                event.target ===
                 settingsOverlay
             ) {
                 settingsOverlay.classList.remove(
@@ -1300,9 +1420,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
         token = null;
         currentUser = null;
-
-        chats = [];
         currentChat = null;
+        chats = [];
 
         conversation = [
             {
@@ -1322,44 +1441,6 @@ document.addEventListener("DOMContentLoaded", () => {
         logout
     );
 
-    messagesContainer.addEventListener(
-        "click",
-        async (e) => {
-            const button =
-                e.target.closest(
-                    ".code-copy-btn"
-                );
-
-            if (!button) return;
-
-            const code =
-                decodeURIComponent(
-                    button.dataset.code
-                );
-
-            try {
-                await navigator.clipboard.writeText(
-                    code
-                );
-
-                button.textContent =
-                    "Copied!";
-
-                setTimeout(
-                    () => {
-                        button.textContent =
-                            "Copy";
-                    },
-                    1500
-                );
-
-            } catch {
-                button.textContent =
-                    "Failed";
-            }
-        }
-    );
-
     clearChat.addEventListener(
         "click",
         () => {
@@ -1376,6 +1457,44 @@ document.addEventListener("DOMContentLoaded", () => {
             settingsOverlay.classList.remove(
                 "show"
             );
+        }
+    );
+
+    messagesContainer.addEventListener(
+        "click",
+        async (event) => {
+            const button =
+                event.target.closest(
+                    ".code-copy-btn"
+                );
+
+            if (!button) return;
+
+            const code =
+                decodeURIComponent(
+                    button.dataset.code
+                );
+
+            try {
+                await navigator
+                    .clipboard
+                    .writeText(code);
+
+                button.textContent =
+                    "Copied!";
+
+                setTimeout(
+                    () => {
+                        button.textContent =
+                            "Copy";
+                    },
+                    1500
+                );
+
+            } catch {
+                button.textContent =
+                    "Failed";
+            }
         }
     );
 
