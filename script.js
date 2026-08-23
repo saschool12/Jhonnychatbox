@@ -1,498 +1,1694 @@
-document.addEventListener("DOMContentLoaded", function() {
+document.addEventListener("DOMContentLoaded", () => {
 
-    // ─── DOM refs ──────────────────────────────────────────────────
-    const messagesContainer = document.getElementById("chatMessages");
-    const userInput = document.getElementById("userInput");
-    const sendBtn = document.getElementById("sendBtn");
-    const photoButton = document.getElementById("photoButton");
-    const imageInput = document.getElementById("imageInput");
-    const fileButton = document.getElementById("fileButton");
-    const fileInput = document.getElementById("fileInput");
-    const attachmentPreview = document.getElementById("attachmentPreview");
-    const attachmentName = document.getElementById("attachmentName");
-    const attachmentSize = document.getElementById("attachmentSize");
-    const attachmentIcon = document.getElementById("attachmentIcon");
-    const removeAttachment = document.getElementById("removeAttachment");
-    const settingsButton = document.getElementById("settingsButton");
-    const settingsPanel = document.getElementById("settingsPanel");
-    const themeToggle = document.getElementById("themeToggle");
-    const enterToggle = document.getElementById("enterToggle");
-    const scrollToggle = document.getElementById("scrollToggle");
-    const newChatButton = document.getElementById("newChatButton");
-    const clearChat = document.getElementById("clearChat");
-    const exportChat = document.getElementById("exportChat");
-    const resetSettings = document.getElementById("resetSettings");
-    const messageCount = document.getElementById("messageCount");
+    const $ = id => document.getElementById(id);
 
-    // ─── Auth elements ────────────────────────────────────────────
-    const authModal = document.getElementById("authModal");
-    const authTitle = document.getElementById("authTitle");
-    const authUsername = document.getElementById("authUsername");
-    const authPassword = document.getElementById("authPassword");
-    const authSubmitBtn = document.getElementById("authSubmitBtn");
-    const authSwitchText = document.getElementById("authSwitchText");
-    const authSwitchLink = document.getElementById("authSwitchLink");
-    const authError = document.getElementById("authError");
+    const app = $("app");
+    const sidebar = $("sidebar");
 
-    // ─── Font size elements ──────────────────────────────────────
-    const fontSizeSlider = document.getElementById("fontSizeSlider");
-    const fontSizeLabel = document.getElementById("fontSizeLabel");
+    const messagesContainer =
+        $("chatMessages");
 
-    // ─── State ──────────────────────────────────────────────────
+    const welcome =
+        $("welcome");
+
+    const input =
+        $("userInput");
+
+    const sendBtn =
+        $("sendBtn");
+
+    const newChatButton =
+        $("newChatButton");
+
+    const topNewChat =
+        $("topNewChat");
+
+    const photoButton =
+        $("photoButton");
+
+    const imageInput =
+        $("imageInput");
+
+    const fileButton =
+        $("fileButton");
+
+    const fileInput =
+        $("fileInput");
+
+    const attachmentPreview =
+        $("attachmentPreview");
+
+    const attachmentName =
+        $("attachmentName");
+
+    const attachmentSize =
+        $("attachmentSize");
+
+    const attachmentIcon =
+        $("attachmentIcon");
+
+    const removeAttachment =
+        $("removeAttachment");
+
+    const chatHistory =
+        $("chatHistory");
+
+    const searchChats =
+        $("searchChats");
+
+    const mobileMenu =
+        $("mobileMenu");
+
+    const settingsButton =
+        $("settingsButton");
+
+    const settingsOverlay =
+        $("settingsOverlay");
+
+    const closeSettings =
+        $("closeSettings");
+
+    const themeToggle =
+        $("themeToggle");
+
+    const enterToggle =
+        $("enterToggle");
+
+    const fontSizeSlider =
+        $("fontSizeSlider");
+
+    const fontSizeLabel =
+        $("fontSizeLabel");
+
+    const clearChat =
+        $("clearChat");
+
+    const logoutButton =
+        $("logoutButton");
+
+    const authModal =
+        $("authModal");
+
+    const authTitle =
+        $("authTitle");
+
+    const authUsername =
+        $("authUsername");
+
+    const authPassword =
+        $("authPassword");
+
+    const authSubmitBtn =
+        $("authSubmitBtn");
+
+    const authSwitchText =
+        $("authSwitchText");
+
+    const authSwitchLink =
+        $("authSwitchLink");
+
+    const authError =
+        $("authError");
+
+    const usernameDisplay =
+        $("usernameDisplay");
+
+    const userAvatar =
+        $("userAvatar");
+
+    let token =
+        localStorage.getItem(
+            "jhonnyToken"
+        );
+
+    let currentUser =
+        localStorage.getItem(
+            "jhonnyUser"
+        );
+
+    let authMode =
+        "login";
+
     let selectedImage = null;
     let selectedFile = null;
-    let selectedFileData = null;
-    let enterToSend = true;
-    let autoScroll = true;
-    let authMode = 'login';
-    let token = localStorage.getItem('jhonnyToken');
-    let currentUser = localStorage.getItem('jhonnyUser');
+
+    let enterToSend =
+        localStorage.getItem(
+            "jhonnyEnter"
+        ) !== "false";
+
+    let chats =
+        JSON.parse(
+            localStorage.getItem(
+                "jhonnyChats"
+            ) || "[]"
+        );
+
+    let currentChat = null;
 
     let conversation = [
-        { role: "system", content: "You are Jhonny, a helpful AI assistant. Analyze messages, images and files when provided. Use markdown for formatting when appropriate." }
+        {
+            role: "system",
+            content:
+                "You are Jhonny, a helpful AI assistant. Give clear, accurate and useful answers. Use Markdown when helpful."
+        }
     ];
 
-    // ─── Check if authenticated ──────────────────────────────────
-    if (token && currentUser) {
-        authModal.style.display = 'none';
-        document.querySelector('.chat-container').style.display = 'flex';
-        enableAll();
-        addMessage("Hello! I'm Jhonny. How can I help you?", "assistant");
-    } else {
-        authModal.style.display = 'flex';
-        document.querySelector('.chat-container').style.display = 'none';
+    function showAuth() {
+
+        authModal.style.display =
+            "flex";
+
+        app.style.display =
+            "none";
     }
 
-    // ─── Auth switch (login <-> register) ────────────────────────
-    authSwitchLink.addEventListener('click', function(e) {
-        e.preventDefault();
-        if (authMode === 'login') {
-            authMode = 'register';
-            authTitle.textContent = 'Register';
-            authSubmitBtn.textContent = 'Register';
-            authSwitchText.innerHTML = 'Already have an account? <a href="#" id="authSwitchLink">Login</a>';
-            // Re-bind the new link
-            document.getElementById('authSwitchLink').addEventListener('click', arguments.callee);
-        } else {
-            authMode = 'login';
-            authTitle.textContent = 'Login';
-            authSubmitBtn.textContent = 'Login';
-            authSwitchText.innerHTML = 'Don\'t have an account? <a href="#" id="authSwitchLink">Register</a>';
-            document.getElementById('authSwitchLink').addEventListener('click', arguments.callee);
-        }
-        authError.textContent = '';
-    });
+    function showApp() {
 
-    // ─── Auth submit ──────────────────────────────────────────────
-    authSubmitBtn.addEventListener('click', async function() {
-        const username = authUsername.value.trim();
-        const password = authPassword.value.trim();
-        if (!username || !password) {
-            authError.textContent = 'Please fill in all fields.';
+        authModal.style.display =
+            "none";
+
+        app.style.display =
+            "flex";
+
+        if (currentUser) {
+
+            usernameDisplay.textContent =
+                currentUser;
+
+            userAvatar.textContent =
+                currentUser
+                    .charAt(0)
+                    .toUpperCase();
+        }
+    }
+
+    if (token && currentUser) {
+
+        showApp();
+
+        createNewChat(false);
+
+    } else {
+
+        showAuth();
+    }
+
+    function switchAuthMode() {
+
+        authMode =
+            authMode === "login"
+                ? "register"
+                : "login";
+
+        if (authMode === "login") {
+
+            authTitle.textContent =
+                "Welcome back";
+
+            authSubmitBtn.textContent =
+                "Login";
+
+            authSwitchText.innerHTML =
+                `Don't have an account?
+                <a href="#" id="authSwitchLink">
+                Register
+                </a>`;
+
+        } else {
+
+            authTitle.textContent =
+                "Create your account";
+
+            authSubmitBtn.textContent =
+                "Register";
+
+            authSwitchText.innerHTML =
+                `Already have an account?
+                <a href="#" id="authSwitchLink">
+                Login
+                </a>`;
+        }
+
+        $("authSwitchLink")
+            .addEventListener(
+                "click",
+                e => {
+
+                    e.preventDefault();
+
+                    switchAuthMode();
+
+                }
+            );
+
+        authError.textContent =
+            "";
+    }
+
+    authSwitchLink.addEventListener(
+        "click",
+        e => {
+
+            e.preventDefault();
+
+            switchAuthMode();
+
+        }
+    );
+
+    authSubmitBtn.addEventListener(
+        "click",
+        async () => {
+
+            const username =
+                authUsername.value.trim();
+
+            const password =
+                authPassword.value.trim();
+
+            if (!username || !password) {
+
+                authError.textContent =
+                    "Please enter your username and password.";
+
+                return;
+            }
+
+            authSubmitBtn.disabled =
+                true;
+
+            try {
+
+                const endpoint =
+                    authMode === "login"
+                        ? "/api/login"
+                        : "/api/register";
+
+                const response =
+                    await fetch(
+                        endpoint,
+                        {
+                            method: "POST",
+
+                            headers: {
+                                "Content-Type":
+                                    "application/json"
+                            },
+
+                            body:
+                                JSON.stringify({
+                                    username,
+                                    password
+                                })
+                        }
+                    );
+
+                const data =
+                    await response.json();
+
+                if (!response.ok) {
+
+                    throw new Error(
+                        data.error ||
+                        "Authentication failed."
+                    );
+                }
+
+                if (
+                    authMode ===
+                    "login"
+                ) {
+
+                    token =
+                        data.token;
+
+                    currentUser =
+                        data.username;
+
+                    localStorage.setItem(
+                        "jhonnyToken",
+                        token
+                    );
+
+                    localStorage.setItem(
+                        "jhonnyUser",
+                        currentUser
+                    );
+
+                    authUsername.value =
+                        "";
+
+                    authPassword.value =
+                        "";
+
+                    showApp();
+
+                    createNewChat(false);
+
+                } else {
+
+                    authError.style.color =
+                        "#77ff99";
+
+                    authError.textContent =
+                        "Registration successful. Please login.";
+
+                    authMode =
+                        "login";
+
+                    authTitle.textContent =
+                        "Welcome back";
+
+                    authSubmitBtn.textContent =
+                        "Login";
+                }
+
+            } catch (error) {
+
+                authError.style.color =
+                    "#ff7777";
+
+                authError.textContent =
+                    error.message ||
+                    "Network error.";
+
+            } finally {
+
+                authSubmitBtn.disabled =
+                    false;
+            }
+        }
+    );
+        function createNewChat(
+        save = true
+    ) {
+
+        if (
+            save &&
+            currentChat
+        ) {
+            saveCurrentChat();
+        }
+
+        currentChat = {
+
+            id: Date.now(),
+
+            title:
+                "New chat",
+
+            messages: []
+        };
+
+        conversation = [
+            {
+                role: "system",
+
+                content:
+                    "You are Jhonny, a helpful AI assistant. Give clear, accurate and useful answers. Use Markdown when helpful."
+            }
+        ];
+
+        messagesContainer.innerHTML =
+            "";
+
+        welcome.style.display =
+            "block";
+
+        renderHistory();
+
+        input.value =
+            "";
+
+        input.focus();
+
+        removeSelectedFile();
+    }
+
+    function saveCurrentChat() {
+
+        if (!currentChat)
+            return;
+
+        const visibleMessages =
+            currentChat.messages;
+
+        if (
+            !visibleMessages.length
+        )
+            return;
+
+        const existing =
+            chats.findIndex(
+                chat =>
+                    chat.id ===
+                    currentChat.id
+            );
+
+        if (existing >= 0) {
+
+            chats[existing] =
+                currentChat;
+
+        } else {
+
+            chats.unshift(
+                currentChat
+            );
+        }
+
+        localStorage.setItem(
+            "jhonnyChats",
+            JSON.stringify(chats)
+        );
+
+        renderHistory();
+    }
+
+    function renderHistory(
+        filter = ""
+    ) {
+
+        chatHistory.innerHTML =
+            "";
+
+        const filtered =
+            chats.filter(
+                chat =>
+                    chat.title
+                        .toLowerCase()
+                        .includes(
+                            filter.toLowerCase()
+                        )
+            );
+
+        filtered.forEach(
+            chat => {
+
+                const button =
+                    document.createElement(
+                        "button"
+                    );
+
+                button.className =
+                    "history-item";
+
+                if (
+                    currentChat &&
+                    chat.id ===
+                    currentChat.id
+                ) {
+
+                    button.classList.add(
+                        "active"
+                    );
+                }
+
+                button.textContent =
+                    chat.title ||
+                    "New chat";
+
+                button.addEventListener(
+                    "click",
+                    () => {
+
+                        loadChat(
+                            chat.id
+                        );
+
+                        if (
+                            window.innerWidth <=
+                            700
+                        ) {
+
+                            sidebar.classList.remove(
+                                "open"
+                            );
+                        }
+                    }
+                );
+
+                chatHistory.appendChild(
+                    button
+                );
+            }
+        );
+    }
+
+    function loadChat(id) {
+
+        const chat =
+            chats.find(
+                chat =>
+                    chat.id === id
+            );
+
+        if (!chat)
+            return;
+
+        currentChat =
+            chat;
+
+        conversation = [
+
+            {
+                role: "system",
+
+                content:
+                    "You are Jhonny, a helpful AI assistant. Give clear, accurate and useful answers. Use Markdown when helpful."
+            },
+
+            ...chat.messages.map(
+                message => ({
+                    role:
+                        message.role,
+
+                    content:
+                        message.content
+                })
+            )
+        ];
+
+        messagesContainer.innerHTML =
+            "";
+
+        welcome.style.display =
+            "none";
+
+        chat.messages.forEach(
+            message => {
+
+                addMessage(
+                    message.content,
+                    message.role,
+                    message.image ||
+                        null,
+                    message.fileName ||
+                        null
+                );
+            }
+        );
+
+        renderHistory();
+    }
+
+    function escapeHTML(
+        text
+    ) {
+
+        return String(text)
+            .replace(
+                /&/g,
+                "&amp;"
+            )
+            .replace(
+                /</g,
+                "&lt;"
+            )
+            .replace(
+                />/g,
+                "&gt;"
+            )
+            .replace(
+                /"/g,
+                "&quot;"
+            )
+            .replace(
+                /'/g,
+                "&#039;"
+            );
+    }
+
+    function renderMarkdown(
+        text
+    ) {
+
+        let html =
+            escapeHTML(text);
+
+        html =
+            html.replace(
+                /^### (.+)$/gm,
+                "<h3>$1</h3>"
+            );
+
+        html =
+            html.replace(
+                /^## (.+)$/gm,
+                "<h2>$1</h2>"
+            );
+
+        html =
+            html.replace(
+                /^# (.+)$/gm,
+                "<h1>$1</h1>"
+            );
+
+        html =
+            html.replace(
+                /\*\*(.+?)\*\*/g,
+                "<strong>$1</strong>"
+            );
+
+        html =
+            html.replace(
+                /\*(.+?)\*/g,
+                "<em>$1</em>"
+            );
+
+        html =
+            html.replace(
+                /`([^`]+)`/g,
+                '<code class="inline-code">$1</code>'
+            );
+
+        html =
+            html.replace(
+                /^\- (.+)$/gm,
+                "<li>$1</li>"
+            );
+
+        html =
+            html.replace(
+                /(<li>.*<\/li>\n?)+/g,
+                "<ul>$&</ul>"
+            );
+
+        html =
+            html.replace(
+                /\n/g,
+                "<br>"
+            );
+
+        return html;
+    }
+
+    function formatContent(
+        text
+    ) {
+
+        const blocks = [];
+
+        let processed =
+            text.replace(
+                /```(\w*)\s*([\s\S]*?)```/g,
+                (
+                    _,
+                    language,
+                    code
+                ) => {
+
+                    const id =
+                        blocks.length;
+
+                    blocks.push({
+
+                        language:
+                            language ||
+                            "text",
+
+                        code:
+                            code.trim()
+                    });
+
+                    return (
+                        `___CODE_${id}___`
+                    );
+                }
+            );
+
+        let html =
+            renderMarkdown(
+                processed
+            );
+
+        blocks.forEach(
+            (
+                block,
+                index
+            ) => {
+
+                const safeCode =
+                    escapeHTML(
+                        block.code
+                    );
+
+                html =
+                    html.replace(
+                        `___CODE_${index}___`,
+
+                        `
+                        <div class="code-block">
+
+                            <div class="code-header">
+
+                                <span>
+                                    ${escapeHTML(
+                                        block.language
+                                    )}
+                                </span>
+
+                                <button
+                                    class="code-copy-btn"
+                                    data-code="${encodeURIComponent(
+                                        block.code
+                                    )}"
+                                >
+                                    Copy
+                                </button>
+
+                            </div>
+
+                            <pre class="code-pre"><code class="code-code">${safeCode}</code></pre>
+
+                        </div>
+                        `
+                    );
+            }
+        );
+
+        return html;
+    }
+
+    function addMessage(
+        content,
+        role,
+        image = null,
+        fileName = null
+    ) {
+
+        welcome.style.display =
+            "none";
+
+        const message =
+            document.createElement(
+                "div"
+            );
+
+        message.className =
+            `message ${role}`;
+
+        message.innerHTML = `
+            <div class="message-avatar">
+                ${
+                    role === "assistant"
+                        ? "J"
+                        : "U"
+                }
+            </div>
+
+            <div class="message-body">
+
+                <div class="message-role">
+                    ${
+                        role === "assistant"
+                            ? "Jhonny"
+                            : "You"
+                    }
+                </div>
+
+                <div class="message-content"></div>
+
+            </div>
+        `;
+
+        const contentDiv =
+            message.querySelector(
+                ".message-content"
+            );
+
+        if (image) {
+
+            const img =
+                document.createElement(
+                    "img"
+                );
+
+            img.src =
+                image;
+
+            img.className =
+                "message-image";
+
+            contentDiv.appendChild(
+                img
+            );
+        }
+
+        if (fileName) {
+
+            const fileBox =
+                document.createElement(
+                    "div"
+                );
+
+            fileBox.className =
+                "file-box";
+
+            fileBox.innerHTML = `
+                <div class="file-icon">
+                    FILE
+                </div>
+
+                <div class="file-name">
+                    ${escapeHTML(
+                        fileName
+                    )}
+                </div>
+            `;
+
+            contentDiv.appendChild(
+                fileBox
+            );
+        }
+
+        if (content) {
+
+            const text =
+                document.createElement(
+                    "div"
+                );
+
+            text.innerHTML =
+                formatContent(
+                    content
+                );
+
+            contentDiv.appendChild(
+                text
+            );
+        }
+
+        if (
+            role === "assistant" &&
+            content
+        ) {
+
+            const copy =
+                document.createElement(
+                    "button"
+                );
+
+            copy.className =
+                "copy-button";
+
+            copy.textContent =
+                "Copy";
+
+            copy.addEventListener(
+                "click",
+                async () => {
+
+                    await navigator
+                        .clipboard
+                        .writeText(
+                            content
+                        );
+
+                    copy.textContent =
+                        "Copied!";
+
+                    setTimeout(
+                        () => {
+
+                            copy.textContent =
+                                "Copy";
+
+                        },
+                        1500
+                    );
+                }
+            );
+
+            contentDiv.appendChild(
+                copy
+            );
+        }
+
+        messagesContainer.appendChild(
+            message
+        );
+
+        messagesContainer
+            .parentElement
+            .scrollTop =
+                messagesContainer
+                    .parentElement
+                    .scrollHeight;
+    }
+        function addTyping() {
+
+        const typing =
+            document.createElement(
+                "div"
+            );
+
+        typing.className =
+            "message assistant";
+
+        typing.id =
+            "typing";
+
+        typing.innerHTML = `
+            <div class="message-avatar">
+                J
+            </div>
+
+            <div class="message-body">
+
+                <div class="message-role">
+                    Jhonny
+                </div>
+
+                <div class="typing">
+
+                    <span></span>
+                    <span></span>
+                    <span></span>
+
+                </div>
+
+            </div>
+        `;
+
+        messagesContainer.appendChild(
+            typing
+        );
+
+        messagesContainer
+            .parentElement
+            .scrollTop =
+                messagesContainer
+                    .parentElement
+                    .scrollHeight;
+    }
+
+    async function sendMessage() {
+
+        const text =
+            input.value.trim();
+
+        if (
+            !text &&
+            !selectedImage &&
+            !selectedFile
+        ) {
             return;
         }
 
-        const endpoint = authMode === 'login' ? '/api/login' : '/api/register';
-        try {
-            const res = await fetch(endpoint, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ username, password })
-            });
-            const data = await res.json();
-            if (!res.ok) {
-                authError.textContent = data.error || 'Something went wrong.';
-                return;
-            }
-            if (authMode === 'login') {
-                token = data.token;
-                currentUser = data.username;
-                localStorage.setItem('jhonnyToken', token);
-                localStorage.setItem('jhonnyUser', currentUser);
-                authModal.style.display = 'none';
-                document.querySelector('.chat-container').style.display = 'flex';
-                enableAll();
-                addMessage("Hello! I'm Jhonny. How can I help you?", "assistant");
-            } else {
-                authError.textContent = 'Registration successful! Please login.';
-                authError.style.color = 'green';
-                // Switch to login mode
-                authMode = 'login';
-                authTitle.textContent = 'Login';
-                authSubmitBtn.textContent = 'Login';
-                authSwitchText.innerHTML = 'Don\'t have an account? <a href="#" id="authSwitchLink">Register</a>';
-                document.getElementById('authSwitchLink').addEventListener('click', arguments.callee);
-                authUsername.value = '';
-                authPassword.value = '';
-            }
-        } catch (err) {
-            authError.textContent = 'Network error. Please try again.';
-            console.error(err);
-        }
-    });
-
-    // ─── Force enable everything ──────────────────────────────
-    function enableAll() {
-        sendBtn.disabled = false;
-        photoButton.disabled = false;
-        fileButton.disabled = false;
-        userInput.disabled = false;
-        userInput.focus();
-    }
-
-    // ─── Apply font size ──────────────────────────────────────
-    function applyFontSize(size) {
-        document.documentElement.style.setProperty('--message-font-size', size + 'px');
-        localStorage.setItem('jhonnyFontSize', size);
-        fontSizeLabel.textContent = size + 'px';
-        fontSizeSlider.value = size;
-    }
-
-    const savedSize = localStorage.getItem('jhonnyFontSize');
-    if (savedSize) applyFontSize(parseInt(savedSize));
-    else applyFontSize(16);
-
-    // ─── Auto scroll toggle ──────────────────────────────────
-    if (localStorage.getItem('jhonnyAutoScroll') === 'false') {
-        autoScroll = false;
-        scrollToggle.classList.remove('active');
-    }
-    scrollToggle.addEventListener('click', function() {
-        autoScroll = !autoScroll;
-        scrollToggle.classList.toggle('active', autoScroll);
-        localStorage.setItem('jhonnyAutoScroll', autoScroll);
-        if (autoScroll) messagesContainer.scrollTop = messagesContainer.scrollHeight;
-    });
-
-    fontSizeSlider.addEventListener('input', function() {
-        applyFontSize(parseInt(this.value));
-    });
-
-    function updateMessageCount() {
-        messageCount.textContent = messagesContainer.querySelectorAll(".message").length;
-    }
-
-    function scrollToBottom() {
-        if (autoScroll) messagesContainer.scrollTop = messagesContainer.scrollHeight;
-    }
-
-    // ─── MARKDOWN RENDERER ────────────────────────────────────
-    function renderMarkdown(text) {
-        let html = text
-            .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-            .replace(/"/g, '&quot;').replace(/'/g, '&#039;');
-        html = html.replace(/^### (.+)$/gm, '<h3 class="md-h3">$1</h3>');
-        html = html.replace(/^## (.+)$/gm, '<h2 class="md-h2">$1</h2>');
-        html = html.replace(/^# (.+)$/gm, '<h1 class="md-h1">$1</h1>');
-        html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
-        html = html.replace(/__(.+?)__/g, '<strong>$1</strong>');
-        html = html.replace(/\*(.+?)\*/g, '<em>$1</em>');
-        html = html.replace(/_(.+?)_/g, '<em>$1</em>');
-        html = html.replace(/~~(.+?)~~/g, '<del>$1</del>');
-        html = html.replace(/\[(.+?)\]\((.+?)\)/g, '<a href="$2" target="_blank">$1</a>');
-        html = html.replace(/^&gt; (.+)$/gm, '<blockquote class="md-quote">$1</blockquote>');
-        html = html.replace(/^[\*\-] (.+)$/gm, '<li class="md-li">$1</li>');
-        html = html.replace(/(<li class="md-li">.*<\/li>\n?)+/g, '<ul class="md-ul">$&</ul>');
-        html = html.replace(/^(\d+)\. (.+)$/gm, '<li class="md-li">$2</li>');
-        html = html.replace(/(<li class="md-li">.*<\/li>\n?)+/g, (match) => '<ol class="md-ol">' + match + '</ol>');
-        html = html.replace(/`([^`]+)`/g, '<code class="inline-code">$1</code>');
-        html = html.replace(/\n/g, '<br>');
-        return html;
-    }
-
-    function formatMessageContent(text) {
-        let blocks = [];
-        let processed = text.replace(/```(\w*)\s*([\s\S]*?)```/g, function(match, language, code) {
-            code = code.replace(/^\s+|\s+$/g, '');
-            const lang = language || 'plaintext';
-            const id = blocks.length;
-            blocks.push({ lang, code });
-            return `%%CODEBLOCK_${id}%%`;
-        });
-        let html = renderMarkdown(processed);
-        blocks.forEach((block, i) => {
-            html = html.replace(`%%CODEBLOCK_${i}%%`,
-                `<div class="code-block"><div class="code-header"><span class="code-language">${block.lang}</span><button class="code-copy-btn">Copy</button></div><pre class="code-pre"><code class="code-code">${block.code}</code></pre></div>`
+        const userContent =
+            text ||
+            (
+                selectedFile
+                    ? "Analyze this file."
+                    : "Analyze this image."
             );
+
+        addMessage(
+            userContent,
+            "user",
+            selectedImage,
+            selectedFile?.name ||
+                null
+        );
+
+        if (!currentChat) {
+
+            createNewChat(
+                false
+            );
+        }
+
+        currentChat.messages.push({
+
+            role: "user",
+
+            content:
+                userContent,
+
+            image:
+                selectedImage,
+
+            fileName:
+                selectedFile?.name ||
+                null
         });
-        return html;
-    }
 
-    function addMessage(content, role, image = null, fileName = null) {
-        const message = document.createElement("div");
-        message.className = "message " + role;
-        if (image) {
-            const img = document.createElement("img");
-            img.src = image;
-            img.className = "message-image";
-            message.appendChild(img);
+        if (
+            currentChat.title ===
+            "New chat"
+        ) {
+
+            currentChat.title =
+                text
+                    ? text.slice(
+                        0,
+                        40
+                    )
+                    : "Uploaded file";
         }
-        if (fileName) {
-            const fileBox = document.createElement("div");
-            fileBox.className = "file-box";
-            const icon = document.createElement("div");
-            icon.className = "file-icon";
-            icon.textContent = "📄";
-            const name = document.createElement("div");
-            name.className = "file-name";
-            name.textContent = fileName;
-            fileBox.appendChild(icon);
-            fileBox.appendChild(name);
-            message.appendChild(fileBox);
-        }
-        if (content) {
-            const contentDiv = document.createElement("div");
-            contentDiv.className = "message-content";
-            contentDiv.innerHTML = formatMessageContent(content);
-            message.appendChild(contentDiv);
-        }
-        if (role === "assistant" && content) {
-            const copy = document.createElement("button");
-            copy.className = "copy-button";
-            copy.textContent = "Copy";
-            copy.addEventListener("click", async function() {
-                try {
-                    await navigator.clipboard.writeText(content);
-                    copy.textContent = "Copied!";
-                    setTimeout(() => { copy.textContent = "Copy"; }, 1500);
-                } catch { alert("Unable to copy."); }
-            });
-            message.appendChild(copy);
-        }
-        messagesContainer.appendChild(message);
-        scrollToBottom();
-        updateMessageCount();
-    }
 
-    messagesContainer.addEventListener("click", function(e) {
-        const btn = e.target.closest(".code-copy-btn");
-        if (!btn) return;
-        const block = btn.closest(".code-block");
-        if (!block) return;
-        const codeEl = block.querySelector(".code-code");
-        if (!codeEl) return;
-        const text = codeEl.textContent;
-        navigator.clipboard.writeText(text).then(() => {
-            btn.textContent = "Copied!";
-            setTimeout(() => { btn.textContent = "Copy"; }, 2000);
-        }).catch(() => alert("Unable to copy."));
-    });
+        conversation.push({
 
-    function addTyping() {
-        const typing = document.createElement("div");
-        typing.className = "typing-indicator";
-        typing.id = "typingIndicator";
-        typing.innerHTML = `<span></span><span></span><span></span>`;
-        messagesContainer.appendChild(typing);
-        scrollToBottom();
-    }
-    function removeTyping() {
-        const typing = document.getElementById("typingIndicator");
-        if (typing) typing.remove();
-    }
+            role: "user",
 
-    function showAttachment(file, isImage) {
-        attachmentPreview.style.display = "block";
-        attachmentName.textContent = file.name;
-        attachmentSize.textContent = formatSize(file.size);
-        if (isImage) attachmentIcon.textContent = "🖼️";
-        else if (file.name.toLowerCase().endsWith(".pdf")) attachmentIcon.textContent = "📕";
-        else if (file.name.toLowerCase().endsWith(".doc") || file.name.toLowerCase().endsWith(".docx")) attachmentIcon.textContent = "📘";
-        else attachmentIcon.textContent = "📄";
-    }
-    function formatSize(bytes) {
-        if (bytes < 1024) return bytes + " B";
-        if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB";
-        return (bytes / 1024 / 1024).toFixed(1) + " MB";
-    }
+            content:
+                userContent
+        });
 
-    photoButton.addEventListener("click", function() { imageInput.click(); });
-    imageInput.addEventListener("change", function() {
-        const file = imageInput.files[0];
-        if (!file) return;
-        if (!file.type.startsWith("image/")) { alert("Please select an image."); return; }
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            selectedImage = e.target.result;
-            showAttachment(file, true);
-        };
-        reader.readAsDataURL(file);
-        imageInput.value = "";
-    });
+        const imageToSend =
+            selectedImage;
 
-    fileButton.addEventListener("click", function() { fileInput.click(); });
-    fileInput.addEventListener("change", async function() {
-        const file = fileInput.files[0];
-        if (!file) return;
-        if (file.size > 10 * 1024 * 1024) { alert("Maximum file size is 10 MB."); fileInput.value = ""; return; }
-        selectedFile = file;
-        selectedFileData = null;
-        const name = file.name.toLowerCase();
-        if (name.endsWith(".txt") || name.endsWith(".csv") || name.endsWith(".json") || name.endsWith(".md")) {
-            try { selectedFileData = await file.text(); } catch { selectedFileData = null; }
-        }
-        showAttachment(file, false);
-        fileInput.value = "";
-    });
+        const fileToSend =
+            selectedFile;
 
-    removeAttachment.addEventListener("click", function() {
-        selectedImage = null;
-        selectedFile = null;
-        selectedFileData = null;
-        imageInput.value = "";
-        fileInput.value = "";
-        attachmentPreview.style.display = "none";
-    });
+        input.value =
+            "";
 
-    newChatButton.addEventListener("click", function() {
-        if (messagesContainer.querySelectorAll(".message").length > 1) {
-            if (!confirm("Start a new conversation? Current chat will be cleared.")) return;
-        }
-        messagesContainer.innerHTML = "";
-        conversation = [{ role: "system", content: "You are Jhonny, a helpful AI assistant. Analyze messages, images and files when provided. Use markdown for formatting when appropriate." }];
-        addMessage("Hello! I'm Jhonny. How can I help you?", "assistant");
-    });
+        input.style.height =
+            "auto";
 
-    // ─── SEND MESSAGE WITH TOKEN ──────────────────────────────
-    async function sendMessage() {
-        const text = userInput.value.trim();
-        if (!text && !selectedImage && !selectedFile) return;
-        const userContent = text || (selectedFile ? "Analyze this file." : "Analyze this image.");
-        addMessage(userContent, "user", selectedImage, selectedFile ? selectedFile.name : null);
-        userInput.value = "";
-        const image = selectedImage;
-        const file = selectedFile;
-        selectedImage = null;
-        selectedFile = null;
-        selectedFileData = null;
-        imageInput.value = "";
-        fileInput.value = "";
-        attachmentPreview.style.display = "none";
-        sendBtn.disabled = true;
-        photoButton.disabled = true;
-        fileButton.disabled = true;
-        userInput.disabled = true;
+        removeSelectedFile();
+
         addTyping();
 
+        sendBtn.disabled =
+            true;
+
         try {
-            conversation.push({ role: "user", content: userContent });
-            const formData = new FormData();
-            formData.append("messages", JSON.stringify(conversation));
-            if (file) {
-                formData.append("file", file);
-            } else if (image) {
-                const blob = await (await fetch(image)).blob();
-                const fileType = blob.type;
-                const fileName = "image." + fileType.split("/")[1];
-                const fileObj = new File([blob], fileName, { type: fileType });
-                formData.append("file", fileObj);
+
+            const formData =
+                new FormData();
+
+            formData.append(
+                "messages",
+                JSON.stringify(
+                    conversation
+                )
+            );
+
+            if (imageToSend) {
+
+                const blob =
+                    await fetch(
+                        imageToSend
+                    ).then(
+                        r =>
+                            r.blob()
+                    );
+
+                formData.append(
+                    "file",
+                    blob,
+                    "image.png"
+                );
             }
 
-            const response = await fetch("/api/chat", {
-                method: "POST",
-                headers: { 'Authorization': `Bearer ${token}` },
-                body: formData
+            if (fileToSend) {
+
+                formData.append(
+                    "file",
+                    fileToSend,
+                    fileToSend.name
+                );
+            }
+
+            const response =
+                await fetch(
+                    "/api/chat",
+                    {
+                        method: "POST",
+
+                        headers: {
+                            Authorization:
+                                `Bearer ${token}`
+                        },
+
+                        body:
+                            formData
+                    }
+                );
+
+            const data =
+                await response.json();
+
+            if (!response.ok) {
+
+                if (
+                    response.status ===
+                    401
+                ) {
+
+                    logout();
+
+                    throw new Error(
+                        "Session expired."
+                    );
+                }
+
+                throw new Error(
+                    data.error ||
+                    "AI request failed."
+                );
+            }
+
+            const reply =
+                data.reply ||
+                "I couldn't generate a response.";
+
+            const typing =
+                $("typing");
+
+            if (typing) {
+                typing.remove();
+            }
+
+            addMessage(
+                reply,
+                "assistant"
+            );
+
+            conversation.push({
+
+                role:
+                    "assistant",
+
+                content:
+                    reply
             });
 
-            if (response.status === 401) {
-                localStorage.removeItem('jhonnyToken');
-                localStorage.removeItem('jhonnyUser');
-                location.reload();
+            currentChat.messages.push({
+
+                role:
+                    "assistant",
+
+                content:
+                    reply
+            });
+
+            saveCurrentChat();
+
+        } catch (error) {
+
+            const typing =
+                $("typing");
+
+            if (typing) {
+                typing.remove();
+            }
+
+            addMessage(
+                `Error: ${error.message}`,
+                "assistant"
+            );
+
+        } finally {
+
+            sendBtn.disabled =
+                false;
+
+            input.focus();
+        }
+    }
+
+    sendBtn.addEventListener(
+        "click",
+        sendMessage
+    );
+
+    input.addEventListener(
+        "keydown",
+        e => {
+
+            if (
+                e.key === "Enter" &&
+                !e.shiftKey &&
+                enterToSend
+            ) {
+
+                e.preventDefault();
+
+                sendMessage();
+            }
+        }
+    );
+
+    input.addEventListener(
+        "input",
+        () => {
+
+            input.style.height =
+                "auto";
+
+            input.style.height =
+                Math.min(
+                    input.scrollHeight,
+                    180
+                ) + "px";
+        }
+    );
+
+    photoButton.addEventListener(
+        "click",
+        () => {
+
+            imageInput.click();
+        }
+    );
+
+    fileButton.addEventListener(
+        "click",
+        () => {
+
+            fileInput.click();
+        }
+    );
+
+    imageInput.addEventListener(
+        "change",
+        () => {
+
+            const file =
+                imageInput.files[0];
+
+            if (!file)
+                return;
+
+            if (
+                !file.type.startsWith(
+                    "image/"
+                )
+            ) {
+
+                alert(
+                    "Please select an image."
+                );
+
                 return;
             }
 
-            if (!response.ok) {
-                const error = await response.text();
-                throw new Error(error || "Server error");
+            const reader =
+                new FileReader();
+
+            reader.onload =
+                e => {
+
+                    selectedImage =
+                        e.target.result;
+
+                    selectedFile =
+                        null;
+
+                    showAttachment(
+                        file,
+                        true
+                    );
+                };
+
+            reader.readAsDataURL(
+                file
+            );
+        }
+    );
+
+    fileInput.addEventListener(
+        "change",
+        () => {
+
+            const file =
+                fileInput.files[0];
+
+            if (!file)
+                return;
+
+            if (
+                file.size >
+                10 *
+                1024 *
+                1024
+            ) {
+
+                alert(
+                    "Maximum file size is 10 MB."
+                );
+
+                return;
             }
-            const data = await response.json();
-            const reply = data.reply || "No response received.";
-            removeTyping();
-            addMessage(reply, "assistant");
-            conversation.push({ role: "assistant", content: reply });
-        } catch (error) {
-            removeTyping();
-            addMessage("Error: " + error.message, "assistant");
-            console.error(error);
-        } finally {
-            enableAll();
+
+            selectedFile =
+                file;
+
+            selectedImage =
+                null;
+
+            showAttachment(
+                file,
+                false
+            );
         }
+    );
+
+    function showAttachment(
+        file,
+        image
+    ) {
+
+        attachmentPreview.style.display =
+            "block";
+
+        attachmentName.textContent =
+            file.name;
+
+        attachmentSize.textContent =
+            formatSize(
+                file.size
+            );
+
+        attachmentIcon.textContent =
+            image
+                ? "IMAGE"
+                : "FILE";
     }
 
-    // ─── Event listeners ──────────────────────────────────────
-    sendBtn.addEventListener("click", sendMessage);
-    userInput.addEventListener("keydown", function(e) {
-        if (e.key === "Enter" && !e.shiftKey && enterToSend) {
-            e.preventDefault();
-            sendMessage();
+    function formatSize(
+        bytes
+    ) {
+
+        if (
+            bytes <
+            1024
+        ) {
+
+            return (
+                bytes +
+                " B"
+            );
         }
-    });
 
-    settingsButton.addEventListener("click", function(e) {
-        e.stopPropagation();
-        settingsPanel.classList.toggle("show");
-        const burgerCheckbox = document.getElementById("burgerCheckbox");
-        if (burgerCheckbox) burgerCheckbox.checked = settingsPanel.classList.contains("show");
-    });
-    settingsPanel.addEventListener("click", function(e) { e.stopPropagation(); });
-    document.addEventListener("click", function() {
-        settingsPanel.classList.remove("show");
-        const burgerCheckbox = document.getElementById("burgerCheckbox");
-        if (burgerCheckbox) burgerCheckbox.checked = false;
-    });
+        if (
+            bytes <
+            1024 *
+            1024
+        ) {
 
-    themeToggle.addEventListener("click", function() {
-        document.body.classList.toggle("light");
-        themeToggle.classList.toggle("active");
-        localStorage.setItem("jhonnyTheme", document.body.classList.contains("light") ? "light" : "dark");
-    });
-    if (localStorage.getItem("jhonnyTheme") === "light") {
-        document.body.classList.add("light");
-        themeToggle.classList.add("active");
+            return (
+                bytes /
+                1024
+            ).toFixed(1) +
+            " KB";
+        }
+
+        return (
+            bytes /
+            1024 /
+            1024
+        ).toFixed(1) +
+        " MB";
     }
 
-    enterToggle.addEventListener("click", function() {
-        enterToSend = !enterToSend;
-        enterToggle.classList.toggle("active", enterToSend);
-    });
+    function removeSelectedFile() {
 
-    clearChat.addEventListener("click", function() {
-        if (!confirm("Clear this conversation?")) return;
-        messagesContainer.innerHTML = "";
-        conversation = [{ role: "system", content: "You are Jhonny, a helpful AI assistant. Analyze messages, images and files when provided. Use markdown for formatting when appropriate." }];
-        addMessage("Hello! I'm Jhonny. How can I help you?", "assistant");
-    });
+        selectedImage =
+            null;
 
-    exportChat.addEventListener("click", function() {
-        let output = "JHONNY CHATBOX\n\n";
-        const msgs = messagesContainer.querySelectorAll(".message");
-        msgs.forEach(function(msg) {
-            const role = msg.classList.contains("user") ? "YOU" : "JHONNY";
-            const contentDiv = msg.querySelector(".message-content");
-            const text = contentDiv ? contentDiv.textContent : msg.textContent;
-            output += role + ":\n" + text + "\n\n";
-        });
-        const blob = new Blob([output], { type: "text/plain" });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement("a");
-        link.href = url;
-        link.download = "jhonny-chat.txt";
-        link.click();
-        URL.revokeObjectURL(url);
-    });
+        selectedFile =
+            null;
 
-    resetSettings.addEventListener("click", function() {
-        document.body.classList.remove("light");
-        themeToggle.classList.remove("active");
-        enterToSend = true;
-        enterToggle.classList.add("active");
-        autoScroll = true;
-        scrollToggle.classList.add("active");
-        localStorage.removeItem("jhonnyTheme");
-        localStorage.removeItem("jhonnyFontSize");
-        localStorage.removeItem("jhonnyAutoScroll");
-        applyFontSize(16);
-    });
+        imageInput.value =
+            "";
 
-    // ─── START (if authenticated, already added) ──────────────────
+        fileInput.value =
+            "";
+
+        attachmentPreview.style.display =
+            "none";
+    }
+
+    removeAttachment.addEventListener(
+        "click",
+        removeSelectedFile
+    );
+        newChatButton.addEventListener(
+        "click",
+        () => {
+
+            createNewChat(
+                true
+            );
+        }
+    );
+
+    topNewChat.addEventListener(
+        "click",
+        () => {
+
+            createNewChat(
+                true
+            );
+        }
+    );
+
+    clearChat.addEventListener(
+        "click",
+        () => {
+
+            if (
+                !confirm(
+                    "Clear this conversation?"
+                )
+            ) {
+                return;
+            }
+
+            createNewChat(
+                true
+            );
+
+            settingsOverlay.classList.remove(
+                "show"
+            );
+        }
+    );
+
+    document
+        .querySelectorAll(
+            ".suggestions button"
+        )
+        .forEach(
+            button => {
+
+                button.addEventListener(
+                    "click",
+                    () => {
+
+                        input.value =
+                            button.dataset
+                                .prompt;
+
+                        input.focus();
+
+                        sendMessage();
+                    }
+                );
+            }
+        );
+
+    searchChats.addEventListener(
+        "input",
+        () => {
+
+            renderHistory(
+                searchChats.value
+            );
+        }
+    );
+
+    settingsButton.addEventListener(
+        "click",
+        () => {
+
+            settingsOverlay.classList.add(
+                "show"
+            );
+        }
+    );
+
+    closeSettings.addEventListener(
+        "click",
+        () => {
+
+            settingsOverlay.classList.remove(
+                "show"
+            );
+        }
+    );
+
+    settingsOverlay.addEventListener(
+        "click",
+        e => {
+
+            if (
+                e.target ===
+                settingsOverlay
+            ) {
+
+                settingsOverlay.classList.remove(
+                    "show"
+                );
+            }
+        }
+    );
+
+    themeToggle.addEventListener(
+        "click",
+        () => {
+
+            themeToggle.classList.toggle(
+                "active"
+            );
+        }
+    );
+
+    enterToggle.classList.toggle(
+        "active",
+        enterToSend
+    );
+
+    enterToggle.addEventListener(
+        "click",
+        () => {
+
+            enterToSend =
+                !enterToSend;
+
+            enterToggle.classList.toggle(
+                "active",
+                enterToSend
+            );
+
+            localStorage.setItem(
+                "jhonnyEnter",
+                enterToSend
+            );
+        }
+    );
+
+    const savedFont =
+        localStorage.getItem(
+            "jhonnyFontSize"
+        ) || "16";
+
+    fontSizeSlider.value =
+        savedFont;
+
+    fontSizeLabel.textContent =
+        savedFont + "px";
+
+    document.documentElement.style
+        .setProperty(
+            "--message-size",
+            savedFont + "px"
+        );
+
+    fontSizeSlider.addEventListener(
+        "input",
+        () => {
+
+            const size =
+                fontSizeSlider.value;
+
+            fontSizeLabel.textContent =
+                size + "px";
+
+            document.documentElement.style
+                .setProperty(
+                    "--message-size",
+                    size + "px"
+                );
+
+            localStorage.setItem(
+                "jhonnyFontSize",
+                size
+            );
+        }
+    );
+
+    mobileMenu.addEventListener(
+        "click",
+        () => {
+
+            sidebar.classList.toggle(
+                "open"
+            );
+        }
+    );
+
+    function logout() {
+
+        localStorage.removeItem(
+            "jhonnyToken"
+        );
+
+        localStorage.removeItem(
+            "jhonnyUser"
+        );
+
+        token =
+            null;
+
+        currentUser =
+            null;
+
+        chats =
+            [];
+
+        showAuth();
+    }
+
+    logoutButton.addEventListener(
+        "click",
+        logout
+    );
+
+    messagesContainer.addEventListener(
+        "click",
+        async e => {
+
+            const button =
+                e.target.closest(
+                    ".code-copy-btn"
+                );
+
+            if (!button)
+                return;
+
+            const code =
+                decodeURIComponent(
+                    button.dataset.code
+                );
+
+            await navigator
+                .clipboard
+                .writeText(
+                    code
+                );
+
+            button.textContent =
+                "Copied!";
+
+            setTimeout(
+                () => {
+
+                    button.textContent =
+                        "Copy";
+
+                },
+                1500
+            );
+        }
+    );
+
+    renderHistory();
+
 });
