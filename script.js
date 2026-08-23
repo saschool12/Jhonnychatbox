@@ -1,148 +1,72 @@
 document.addEventListener("DOMContentLoaded", () => {
-
-    const $ = id => document.getElementById(id);
+    const $ = (id) => document.getElementById(id);
 
     const app = $("app");
     const sidebar = $("sidebar");
+    const messagesContainer = $("chatMessages");
+    const welcome = $("welcome");
+    const input = $("userInput");
+    const sendBtn = $("sendBtn");
 
-    const messagesContainer =
-        $("chatMessages");
+    const newChatButton = $("newChatButton");
+    const topNewChat = $("topNewChat");
 
-    const welcome =
-        $("welcome");
+    const photoButton = $("photoButton");
+    const imageInput = $("imageInput");
 
-    const input =
-        $("userInput");
+    const fileButton = $("fileButton");
+    const fileInput = $("fileInput");
 
-    const sendBtn =
-        $("sendBtn");
+    const attachmentPreview = $("attachmentPreview");
+    const attachmentName = $("attachmentName");
+    const attachmentSize = $("attachmentSize");
+    const attachmentIcon = $("attachmentIcon");
+    const removeAttachment = $("removeAttachment");
 
-    const newChatButton =
-        $("newChatButton");
+    const chatHistory = $("chatHistory");
+    const searchChats = $("searchChats");
 
-    const topNewChat =
-        $("topNewChat");
+    const mobileMenu = $("mobileMenu");
 
-    const photoButton =
-        $("photoButton");
+    const settingsButton = $("settingsButton");
+    const settingsOverlay = $("settingsOverlay");
+    const closeSettings = $("closeSettings");
 
-    const imageInput =
-        $("imageInput");
+    const themeToggle = $("themeToggle");
+    const enterToggle = $("enterToggle");
 
-    const fileButton =
-        $("fileButton");
+    const fontSizeSlider = $("fontSizeSlider");
+    const fontSizeLabel = $("fontSizeLabel");
 
-    const fileInput =
-        $("fileInput");
+    const clearChat = $("clearChat");
+    const logoutButton = $("logoutButton");
 
-    const attachmentPreview =
-        $("attachmentPreview");
+    const authModal = $("authModal");
+    const authTitle = $("authTitle");
+    const authUsername = $("authUsername");
+    const authPassword = $("authPassword");
+    const authSubmitBtn = $("authSubmitBtn");
+    const authSwitchText = $("authSwitchText");
+    const authSwitchLink = $("authSwitchLink");
+    const authError = $("authError");
 
-    const attachmentName =
-        $("attachmentName");
+    const usernameDisplay = $("usernameDisplay");
+    const userAvatar = $("userAvatar");
 
-    const attachmentSize =
-        $("attachmentSize");
+    let token = localStorage.getItem("jhonnyToken");
+    let currentUser = localStorage.getItem("jhonnyUser");
 
-    const attachmentIcon =
-        $("attachmentIcon");
-
-    const removeAttachment =
-        $("removeAttachment");
-
-    const chatHistory =
-        $("chatHistory");
-
-    const searchChats =
-        $("searchChats");
-
-    const mobileMenu =
-        $("mobileMenu");
-
-    const settingsButton =
-        $("settingsButton");
-
-    const settingsOverlay =
-        $("settingsOverlay");
-
-    const closeSettings =
-        $("closeSettings");
-
-    const themeToggle =
-        $("themeToggle");
-
-    const enterToggle =
-        $("enterToggle");
-
-    const fontSizeSlider =
-        $("fontSizeSlider");
-
-    const fontSizeLabel =
-        $("fontSizeLabel");
-
-    const clearChat =
-        $("clearChat");
-
-    const logoutButton =
-        $("logoutButton");
-
-    const authModal =
-        $("authModal");
-
-    const authTitle =
-        $("authTitle");
-
-    const authUsername =
-        $("authUsername");
-
-    const authPassword =
-        $("authPassword");
-
-    const authSubmitBtn =
-        $("authSubmitBtn");
-
-    const authSwitchText =
-        $("authSwitchText");
-
-    const authSwitchLink =
-        $("authSwitchLink");
-
-    const authError =
-        $("authError");
-
-    const usernameDisplay =
-        $("usernameDisplay");
-
-    const userAvatar =
-        $("userAvatar");
-
-    let token =
-        localStorage.getItem(
-            "jhonnyToken"
-        );
-
-    let currentUser =
-        localStorage.getItem(
-            "jhonnyUser"
-        );
-
-    let authMode =
-        "login";
+    let authMode = "login";
 
     let selectedImage = null;
     let selectedFile = null;
 
     let enterToSend =
-        localStorage.getItem(
-            "jhonnyEnter"
-        ) !== "false";
+        localStorage.getItem("jhonnyEnter") !== "false";
 
-    let chats =
-        JSON.parse(
-            localStorage.getItem(
-                "jhonnyChats"
-            ) || "[]"
-        );
+    let chats = JSON.parse(
+        localStorage.getItem("jhonnyChats") || "[]"
+    );
 
     let currentChat = null;
 
@@ -155,307 +79,287 @@ document.addEventListener("DOMContentLoaded", () => {
     ];
 
     function showAuth() {
-
-        authModal.style.display =
-            "flex";
-
-        app.style.display =
-            "none";
+        authModal.style.display = "flex";
+        app.style.display = "none";
     }
 
     function showApp() {
-
-        authModal.style.display =
-            "none";
-
-        app.style.display =
-            "flex";
+        authModal.style.display = "none";
+        app.style.display = "flex";
 
         if (currentUser) {
-
-            usernameDisplay.textContent =
-                currentUser;
-
+            usernameDisplay.textContent = currentUser;
             userAvatar.textContent =
-                currentUser
-                    .charAt(0)
-                    .toUpperCase();
+                currentUser.charAt(0).toUpperCase();
         }
     }
 
     if (token && currentUser) {
-
         showApp();
-
         createNewChat(false);
-
     } else {
-
         showAuth();
     }
 
     function switchAuthMode() {
-
         authMode =
             authMode === "login"
                 ? "register"
                 : "login";
 
+        authError.textContent = "";
+        authError.style.color = "#ff7777";
+
         if (authMode === "login") {
-
-            authTitle.textContent =
-                "Welcome back";
-
-            authSubmitBtn.textContent =
-                "Login";
+            authTitle.textContent = "Welcome back";
+            authSubmitBtn.textContent = "Login";
 
             authSwitchText.innerHTML =
                 `Don't have an account?
                 <a href="#" id="authSwitchLink">
-                Register
+                    Register
                 </a>`;
-
         } else {
-
-            authTitle.textContent =
-                "Create your account";
-
-            authSubmitBtn.textContent =
-                "Register";
+            authTitle.textContent = "Create your account";
+            authSubmitBtn.textContent = "Register";
 
             authSwitchText.innerHTML =
                 `Already have an account?
                 <a href="#" id="authSwitchLink">
-                Login
+                    Login
                 </a>`;
         }
 
-        $("authSwitchLink")
-            .addEventListener(
+        const newSwitchLink =
+            $("authSwitchLink");
+
+        if (newSwitchLink) {
+            newSwitchLink.addEventListener(
                 "click",
-                e => {
-
+                (e) => {
                     e.preventDefault();
-
                     switchAuthMode();
-
                 }
             );
-
-        authError.textContent =
-            "";
+        }
     }
 
     authSwitchLink.addEventListener(
         "click",
-        e => {
-
+        (e) => {
             e.preventDefault();
-
             switchAuthMode();
-
         }
     );
 
     authSubmitBtn.addEventListener(
         "click",
         async () => {
-
             const username =
                 authUsername.value.trim();
 
             const password =
-                authPassword.value.trim();
+                authPassword.value;
+
+            authError.style.color = "#ff7777";
 
             if (!username || !password) {
-
                 authError.textContent =
                     "Please enter your username and password.";
-
                 return;
             }
 
-            authSubmitBtn.disabled =
-                true;
+            if (authMode === "register") {
+                if (username.length < 3) {
+                    authError.textContent =
+                        "Username must be at least 3 characters.";
+                    return;
+                }
+
+                if (password.length < 6) {
+                    authError.textContent =
+                        "Password must be at least 6 characters.";
+                    return;
+                }
+            }
+
+            authSubmitBtn.disabled = true;
+            authSubmitBtn.textContent =
+                authMode === "login"
+                    ? "Logging in..."
+                    : "Creating account...";
 
             try {
-
                 const endpoint =
                     authMode === "login"
                         ? "/api/login"
                         : "/api/register";
 
-                const response =
-                    await fetch(
-                        endpoint,
-                        {
-                            method: "POST",
+                const response = await fetch(
+                    endpoint,
+                    {
+                        method: "POST",
 
-                            headers: {
-                                "Content-Type":
-                                    "application/json"
-                            },
+                        headers: {
+                            "Content-Type":
+                                "application/json",
+                            "Accept":
+                                "application/json"
+                        },
 
-                            body:
-                                JSON.stringify({
-                                    username,
-                                    password
-                                })
-                        }
-                    );
+                        body: JSON.stringify({
+                            username,
+                            password
+                        })
+                    }
+                );
 
-                const data =
-                    await response.json();
+                const responseText =
+                    await response.text();
 
-                if (!response.ok) {
+                let data;
 
+                try {
+                    data =
+                        responseText
+                            ? JSON.parse(responseText)
+                            : {};
+                } catch {
                     throw new Error(
-                        data.error ||
-                        "Authentication failed."
+                        responseText ||
+                        `Server returned HTTP ${response.status}`
                     );
                 }
 
-                if (
-                    authMode ===
-                    "login"
-                ) {
-
-                    token =
-                        data.token;
-
-                    currentUser =
-                        data.username;
-
-                    localStorage.setItem(
-                        "jhonnyToken",
-                        token
+                if (!response.ok) {
+                    throw new Error(
+                        data.error ||
+                        data.message ||
+                        `Request failed with HTTP ${response.status}`
                     );
+                }
 
-                    localStorage.setItem(
-                        "jhonnyUser",
-                        currentUser
-                    );
-
-                    authUsername.value =
-                        "";
-
-                    authPassword.value =
-                        "";
-
-                    showApp();
-
-                    createNewChat(false);
-
-                } else {
-
+                if (authMode === "register") {
                     authError.style.color =
                         "#77ff99";
 
                     authError.textContent =
-                        "Registration successful. Please login.";
+                        "Account created! You can now log in.";
 
-                    authMode =
-                        "login";
+                    authMode = "login";
 
                     authTitle.textContent =
                         "Welcome back";
 
                     authSubmitBtn.textContent =
                         "Login";
+
+                    authPassword.value = "";
+
+                    return;
                 }
 
+                if (!data.token) {
+                    throw new Error(
+                        "Login succeeded but the server did not return a token."
+                    );
+                }
+
+                token = data.token;
+
+                currentUser =
+                    data.username ||
+                    username;
+
+                localStorage.setItem(
+                    "jhonnyToken",
+                    token
+                );
+
+                localStorage.setItem(
+                    "jhonnyUser",
+                    currentUser
+                );
+
+                authUsername.value = "";
+                authPassword.value = "";
+
+                showApp();
+
+                createNewChat(false);
+
             } catch (error) {
+                console.error(
+                    "Authentication error:",
+                    error
+                );
 
                 authError.style.color =
                     "#ff7777";
 
                 authError.textContent =
                     error.message ||
-                    "Network error.";
+                    "Unable to connect to the server.";
 
             } finally {
+                authSubmitBtn.disabled = false;
 
-                authSubmitBtn.disabled =
-                    false;
+                authSubmitBtn.textContent =
+                    authMode === "login"
+                        ? "Login"
+                        : "Register";
             }
         }
     );
-        function createNewChat(
-        save = true
-    ) {
 
-        if (
-            save &&
-            currentChat
-        ) {
+    function createNewChat(save = true) {
+        if (save && currentChat) {
             saveCurrentChat();
         }
 
         currentChat = {
-
             id: Date.now(),
-
-            title:
-                "New chat",
-
+            title: "New chat",
             messages: []
         };
 
         conversation = [
             {
                 role: "system",
-
                 content:
                     "You are Jhonny, a helpful AI assistant. Give clear, accurate and useful answers. Use Markdown when helpful."
             }
         ];
 
-        messagesContainer.innerHTML =
-            "";
+        messagesContainer.innerHTML = "";
 
-        welcome.style.display =
-            "block";
+        welcome.style.display = "block";
 
         renderHistory();
 
-        input.value =
-            "";
-
-        input.focus();
+        input.value = "";
+        input.style.height = "auto";
 
         removeSelectedFile();
+
+        input.focus();
     }
 
     function saveCurrentChat() {
+        if (!currentChat) return;
 
-        if (!currentChat)
-            return;
-
-        const visibleMessages =
-            currentChat.messages;
-
-        if (
-            !visibleMessages.length
-        )
-            return;
+        if (!currentChat.messages.length) return;
 
         const existing =
             chats.findIndex(
-                chat =>
-                    chat.id ===
-                    currentChat.id
+                (chat) =>
+                    chat.id === currentChat.id
             );
 
         if (existing >= 0) {
-
-            chats[existing] =
-                currentChat;
-
+            chats[existing] = currentChat;
         } else {
-
-            chats.unshift(
-                currentChat
-            );
+            chats.unshift(currentChat);
         }
 
         localStorage.setItem(
@@ -466,126 +370,89 @@ document.addEventListener("DOMContentLoaded", () => {
         renderHistory();
     }
 
-    function renderHistory(
-        filter = ""
-    ) {
-
-        chatHistory.innerHTML =
-            "";
+    function renderHistory(filter = "") {
+        chatHistory.innerHTML = "";
 
         const filtered =
-            chats.filter(
-                chat =>
-                    chat.title
-                        .toLowerCase()
-                        .includes(
-                            filter.toLowerCase()
-                        )
+            chats.filter((chat) =>
+                (chat.title || "New chat")
+                    .toLowerCase()
+                    .includes(
+                        filter.toLowerCase()
+                    )
             );
 
-        filtered.forEach(
-            chat => {
+        filtered.forEach((chat) => {
+            const button =
+                document.createElement("button");
 
-                const button =
-                    document.createElement(
-                        "button"
-                    );
+            button.className =
+                "history-item";
 
-                button.className =
-                    "history-item";
-
-                if (
-                    currentChat &&
-                    chat.id ===
-                    currentChat.id
-                ) {
-
-                    button.classList.add(
-                        "active"
-                    );
-                }
-
-                button.textContent =
-                    chat.title ||
-                    "New chat";
-
-                button.addEventListener(
-                    "click",
-                    () => {
-
-                        loadChat(
-                            chat.id
-                        );
-
-                        if (
-                            window.innerWidth <=
-                            700
-                        ) {
-
-                            sidebar.classList.remove(
-                                "open"
-                            );
-                        }
-                    }
-                );
-
-                chatHistory.appendChild(
-                    button
-                );
+            if (
+                currentChat &&
+                chat.id === currentChat.id
+            ) {
+                button.classList.add("active");
             }
-        );
+
+            button.textContent =
+                chat.title || "New chat";
+
+            button.addEventListener(
+                "click",
+                () => {
+                    loadChat(chat.id);
+
+                    if (
+                        window.innerWidth <= 700
+                    ) {
+                        sidebar.classList.remove(
+                            "open"
+                        );
+                    }
+                }
+            );
+
+            chatHistory.appendChild(button);
+        });
     }
 
     function loadChat(id) {
-
         const chat =
             chats.find(
-                chat =>
-                    chat.id === id
+                (item) => item.id === id
             );
 
-        if (!chat)
-            return;
+        if (!chat) return;
 
-        currentChat =
-            chat;
+        currentChat = chat;
 
         conversation = [
-
             {
                 role: "system",
-
                 content:
                     "You are Jhonny, a helpful AI assistant. Give clear, accurate and useful answers. Use Markdown when helpful."
             },
-
             ...chat.messages.map(
-                message => ({
-                    role:
-                        message.role,
-
-                    content:
-                        message.content
+                (message) => ({
+                    role: message.role,
+                    content: message.content
                 })
             )
         ];
 
-        messagesContainer.innerHTML =
-            "";
+        messagesContainer.innerHTML = "";
 
-        welcome.style.display =
-            "none";
+        welcome.style.display = "none";
 
         chat.messages.forEach(
-            message => {
-
+            (message) => {
                 addMessage(
                     message.content,
                     message.role,
-                    message.image ||
-                        null,
-                    message.fileName ||
-                        null
+                    message.image || null,
+                    message.fileName || null
                 );
             }
         );
@@ -593,101 +460,68 @@ document.addEventListener("DOMContentLoaded", () => {
         renderHistory();
     }
 
-    function escapeHTML(
-        text
-    ) {
-
+    function escapeHTML(text) {
         return String(text)
-            .replace(
-                /&/g,
-                "&amp;"
-            )
-            .replace(
-                /</g,
-                "&lt;"
-            )
-            .replace(
-                />/g,
-                "&gt;"
-            )
-            .replace(
-                /"/g,
-                "&quot;"
-            )
-            .replace(
-                /'/g,
-                "&#039;"
-            );
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
     }
 
-    function renderMarkdown(
-        text
-    ) {
-
+    function renderMarkdown(text) {
         let html =
             escapeHTML(text);
 
-        html =
-            html.replace(
-                /^### (.+)$/gm,
-                "<h3>$1</h3>"
-            );
+        html = html.replace(
+            /^### (.+)$/gm,
+            "<h3>$1</h3>"
+        );
 
-        html =
-            html.replace(
-                /^## (.+)$/gm,
-                "<h2>$1</h2>"
-            );
+        html = html.replace(
+            /^## (.+)$/gm,
+            "<h2>$1</h2>"
+        );
 
-        html =
-            html.replace(
-                /^# (.+)$/gm,
-                "<h1>$1</h1>"
-            );
+        html = html.replace(
+            /^# (.+)$/gm,
+            "<h1>$1</h1>"
+        );
 
-        html =
-            html.replace(
-                /\*\*(.+?)\*\*/g,
-                "<strong>$1</strong>"
-            );
+        html = html.replace(
+            /\*\*(.+?)\*\*/g,
+            "<strong>$1</strong>"
+        );
 
-        html =
-            html.replace(
-                /\*(.+?)\*/g,
-                "<em>$1</em>"
-            );
+        html = html.replace(
+            /\*(.+?)\*/g,
+            "<em>$1</em>"
+        );
 
-        html =
-            html.replace(
-                /`([^`]+)`/g,
-                '<code class="inline-code">$1</code>'
-            );
+        html = html.replace(
+            /`([^`]+)`/g,
+            '<code class="inline-code">$1</code>'
+        );
 
-        html =
-            html.replace(
-                /^\- (.+)$/gm,
-                "<li>$1</li>"
-            );
+        html = html.replace(
+            /^\- (.+)$/gm,
+            "<li>$1</li>"
+        );
 
-        html =
-            html.replace(
-                /(<li>.*<\/li>\n?)+/g,
-                "<ul>$&</ul>"
-            );
+        html = html.replace(
+            /(<li>.*<\/li>\n?)+/g,
+            "<ul>$&</ul>"
+        );
 
-        html =
-            html.replace(
-                /\n/g,
-                "<br>"
-            );
+        html = html.replace(
+            /\n/g,
+            "<br>"
+        );
 
         return html;
     }
 
-    function formatContent(
-        text
-    ) {
-
+    function formatContent(text) {
         const blocks = [];
 
         let processed =
@@ -698,73 +532,55 @@ document.addEventListener("DOMContentLoaded", () => {
                     language,
                     code
                 ) => {
-
                     const id =
                         blocks.length;
 
                     blocks.push({
-
                         language:
-                            language ||
-                            "text",
-
+                            language || "text",
                         code:
                             code.trim()
                     });
 
-                    return (
-                        `___CODE_${id}___`
-                    );
+                    return `___CODE_${id}___`;
                 }
             );
 
         let html =
-            renderMarkdown(
-                processed
-            );
+            renderMarkdown(processed);
 
         blocks.forEach(
-            (
-                block,
-                index
-            ) => {
-
+            (block, index) => {
                 const safeCode =
                     escapeHTML(
                         block.code
                     );
 
-                html =
-                    html.replace(
-                        `___CODE_${index}___`,
+                html = html.replace(
+                    `___CODE_${index}___`,
+                    `
+                    <div class="code-block">
+                        <div class="code-header">
+                            <span class="code-language">
+                                ${escapeHTML(
+                                    block.language
+                                )}
+                            </span>
 
-                        `
-                        <div class="code-block">
-
-                            <div class="code-header">
-
-                                <span>
-                                    ${escapeHTML(
-                                        block.language
-                                    )}
-                                </span>
-
-                                <button
-                                    class="code-copy-btn"
-                                    data-code="${encodeURIComponent(
-                                        block.code
-                                    )}"
-                                >
-                                    Copy
-                                </button>
-
-                            </div>
-
-                            <pre class="code-pre"><code class="code-code">${safeCode}</code></pre>
-
+                            <button
+                                class="code-copy-btn"
+                                data-code="${encodeURIComponent(
+                                    block.code
+                                )}"
+                            >
+                                Copy
+                            </button>
                         </div>
-                        `
-                    );
+
+                        <pre class="code-pre"><code class="code-code">${safeCode}</code></pre>
+                    </div>
+                    `
+                );
             }
         );
 
@@ -777,14 +593,10 @@ document.addEventListener("DOMContentLoaded", () => {
         image = null,
         fileName = null
     ) {
-
-        welcome.style.display =
-            "none";
+        welcome.style.display = "none";
 
         const message =
-            document.createElement(
-                "div"
-            );
+            document.createElement("div");
 
         message.className =
             `message ${role}`;
@@ -799,7 +611,6 @@ document.addEventListener("DOMContentLoaded", () => {
             </div>
 
             <div class="message-body">
-
                 <div class="message-role">
                     ${
                         role === "assistant"
@@ -809,7 +620,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 </div>
 
                 <div class="message-content"></div>
-
             </div>
         `;
 
@@ -819,32 +629,21 @@ document.addEventListener("DOMContentLoaded", () => {
             );
 
         if (image) {
-
             const img =
-                document.createElement(
-                    "img"
-                );
+                document.createElement("img");
 
-            img.src =
-                image;
-
+            img.src = image;
             img.className =
                 "message-image";
 
-            contentDiv.appendChild(
-                img
-            );
+            contentDiv.appendChild(img);
         }
 
         if (fileName) {
-
             const fileBox =
-                document.createElement(
-                    "div"
-                );
+                document.createElement("div");
 
-            fileBox.className =
-                "file-box";
+            fileBox.className = "file-box";
 
             fileBox.innerHTML = `
                 <div class="file-icon">
@@ -852,103 +651,83 @@ document.addEventListener("DOMContentLoaded", () => {
                 </div>
 
                 <div class="file-name">
-                    ${escapeHTML(
-                        fileName
-                    )}
+                    ${escapeHTML(fileName)}
                 </div>
             `;
 
-            contentDiv.appendChild(
-                fileBox
-            );
+            contentDiv.appendChild(fileBox);
         }
 
         if (content) {
-
             const text =
-                document.createElement(
-                    "div"
-                );
+                document.createElement("div");
 
             text.innerHTML =
-                formatContent(
-                    content
-                );
+                formatContent(content);
 
-            contentDiv.appendChild(
-                text
-            );
+            contentDiv.appendChild(text);
         }
 
         if (
             role === "assistant" &&
             content
         ) {
-
             const copy =
-                document.createElement(
-                    "button"
-                );
+                document.createElement("button");
 
             copy.className =
                 "copy-button";
 
-            copy.textContent =
-                "Copy";
+            copy.textContent = "Copy";
 
             copy.addEventListener(
                 "click",
                 async () => {
-
-                    await navigator
-                        .clipboard
-                        .writeText(
+                    try {
+                        await navigator.clipboard.writeText(
                             content
                         );
 
-                    copy.textContent =
-                        "Copied!";
+                        copy.textContent =
+                            "Copied!";
 
-                    setTimeout(
-                        () => {
-
-                            copy.textContent =
-                                "Copy";
-
-                        },
-                        1500
-                    );
+                        setTimeout(
+                            () => {
+                                copy.textContent =
+                                    "Copy";
+                            },
+                            1500
+                        );
+                    } catch {}
                 }
             );
 
-            contentDiv.appendChild(
-                copy
-            );
+            contentDiv.appendChild(copy);
         }
 
         messagesContainer.appendChild(
             message
         );
 
-        messagesContainer
-            .parentElement
-            .scrollTop =
-                messagesContainer
-                    .parentElement
-                    .scrollHeight;
+        scrollToBottom();
     }
-        function addTyping() {
 
+    function scrollToBottom() {
+        const area =
+            messagesContainer.parentElement;
+
+        area.scrollTop =
+            area.scrollHeight;
+    }
+
+    function addTyping() {
         const typing =
-            document.createElement(
-                "div"
-            );
+            document.createElement("div");
 
         typing.className =
             "message assistant";
 
-        typing.id =
-            "typing";
+        typing.id = "typing";
 
         typing.innerHTML = `
             <div class="message-avatar">
@@ -956,19 +735,15 @@ document.addEventListener("DOMContentLoaded", () => {
             </div>
 
             <div class="message-body">
-
                 <div class="message-role">
                     Jhonny
                 </div>
 
                 <div class="typing">
-
                     <span></span>
                     <span></span>
                     <span></span>
-
                 </div>
-
             </div>
         `;
 
@@ -976,16 +751,9 @@ document.addEventListener("DOMContentLoaded", () => {
             typing
         );
 
-        messagesContainer
-            .parentElement
-            .scrollTop =
-                messagesContainer
-                    .parentElement
-                    .scrollHeight;
+        scrollToBottom();
     }
-
-    async function sendMessage() {
-
+        async function sendMessage() {
         const text =
             input.value.trim();
 
@@ -1009,52 +777,38 @@ document.addEventListener("DOMContentLoaded", () => {
             userContent,
             "user",
             selectedImage,
-            selectedFile?.name ||
-                null
+            selectedFile
+                ? selectedFile.name
+                : null
         );
 
         if (!currentChat) {
-
-            createNewChat(
-                false
-            );
+            createNewChat(false);
         }
 
         currentChat.messages.push({
-
             role: "user",
-
-            content:
-                userContent,
-
-            image:
-                selectedImage,
-
+            content: userContent,
+            image: selectedImage,
             fileName:
-                selectedFile?.name ||
-                null
+                selectedFile
+                    ? selectedFile.name
+                    : null
         });
 
         if (
             currentChat.title ===
             "New chat"
         ) {
-
             currentChat.title =
                 text
-                    ? text.slice(
-                        0,
-                        40
-                    )
+                    ? text.slice(0, 40)
                     : "Uploaded file";
         }
 
         conversation.push({
-
             role: "user",
-
-            content:
-                userContent
+            content: userContent
         });
 
         const imageToSend =
@@ -1063,21 +817,16 @@ document.addEventListener("DOMContentLoaded", () => {
         const fileToSend =
             selectedFile;
 
-        input.value =
-            "";
-
-        input.style.height =
-            "auto";
+        input.value = "";
+        input.style.height = "auto";
 
         removeSelectedFile();
 
         addTyping();
 
-        sendBtn.disabled =
-            true;
+        sendBtn.disabled = true;
 
         try {
-
             const formData =
                 new FormData();
 
@@ -1089,13 +838,12 @@ document.addEventListener("DOMContentLoaded", () => {
             );
 
             if (imageToSend) {
-
                 const blob =
                     await fetch(
                         imageToSend
                     ).then(
-                        r =>
-                            r.blob()
+                        (response) =>
+                            response.blob()
                     );
 
                 formData.append(
@@ -1106,7 +854,6 @@ document.addEventListener("DOMContentLoaded", () => {
             }
 
             if (fileToSend) {
-
                 formData.append(
                     "file",
                     fileToSend,
@@ -1130,31 +877,42 @@ document.addEventListener("DOMContentLoaded", () => {
                     }
                 );
 
-            const data =
-                await response.json();
+            const responseText =
+                await response.text();
+
+            let data;
+
+            try {
+                data =
+                    responseText
+                        ? JSON.parse(
+                            responseText
+                        )
+                        : {};
+            } catch {
+                throw new Error(
+                    responseText ||
+                    `Server returned HTTP ${response.status}`
+                );
+            }
 
             if (!response.ok) {
-
                 if (
-                    response.status ===
-                    401
+                    response.status === 401
                 ) {
-
                     logout();
-
-                    throw new Error(
-                        "Session expired."
-                    );
                 }
 
                 throw new Error(
                     data.error ||
+                    data.message ||
                     "AI request failed."
                 );
             }
 
             const reply =
                 data.reply ||
+                data.message ||
                 "I couldn't generate a response.";
 
             const typing =
@@ -1170,26 +928,22 @@ document.addEventListener("DOMContentLoaded", () => {
             );
 
             conversation.push({
-
-                role:
-                    "assistant",
-
-                content:
-                    reply
+                role: "assistant",
+                content: reply
             });
 
             currentChat.messages.push({
-
-                role:
-                    "assistant",
-
-                content:
-                    reply
+                role: "assistant",
+                content: reply
             });
 
             saveCurrentChat();
 
         } catch (error) {
+            console.error(
+                "Chat error:",
+                error
+            );
 
             const typing =
                 $("typing");
@@ -1204,10 +958,7 @@ document.addEventListener("DOMContentLoaded", () => {
             );
 
         } finally {
-
-            sendBtn.disabled =
-                false;
-
+            sendBtn.disabled = false;
             input.focus();
         }
     }
@@ -1219,16 +970,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
     input.addEventListener(
         "keydown",
-        e => {
-
+        (e) => {
             if (
                 e.key === "Enter" &&
                 !e.shiftKey &&
                 enterToSend
             ) {
-
                 e.preventDefault();
-
                 sendMessage();
             }
         }
@@ -1237,9 +985,7 @@ document.addEventListener("DOMContentLoaded", () => {
     input.addEventListener(
         "input",
         () => {
-
-            input.style.height =
-                "auto";
+            input.style.height = "auto";
 
             input.style.height =
                 Math.min(
@@ -1252,7 +998,6 @@ document.addEventListener("DOMContentLoaded", () => {
     photoButton.addEventListener(
         "click",
         () => {
-
             imageInput.click();
         }
     );
@@ -1260,7 +1005,6 @@ document.addEventListener("DOMContentLoaded", () => {
     fileButton.addEventListener(
         "click",
         () => {
-
             fileInput.click();
         }
     );
@@ -1268,19 +1012,16 @@ document.addEventListener("DOMContentLoaded", () => {
     imageInput.addEventListener(
         "change",
         () => {
-
             const file =
                 imageInput.files[0];
 
-            if (!file)
-                return;
+            if (!file) return;
 
             if (
                 !file.type.startsWith(
                     "image/"
                 )
             ) {
-
                 alert(
                     "Please select an image."
                 );
@@ -1291,56 +1032,45 @@ document.addEventListener("DOMContentLoaded", () => {
             const reader =
                 new FileReader();
 
-            reader.onload =
-                e => {
+            reader.onload = (e) => {
+                selectedImage =
+                    e.target.result;
 
-                    selectedImage =
-                        e.target.result;
+                selectedFile = null;
 
-                    selectedFile =
-                        null;
+                showAttachment(
+                    file,
+                    true
+                );
+            };
 
-                    showAttachment(
-                        file,
-                        true
-                    );
-                };
-
-            reader.readAsDataURL(
-                file
-            );
+            reader.readAsDataURL(file);
         }
     );
 
     fileInput.addEventListener(
         "change",
         () => {
-
             const file =
                 fileInput.files[0];
 
-            if (!file)
-                return;
+            if (!file) return;
 
             if (
                 file.size >
-                10 *
-                1024 *
-                1024
+                10 * 1024 * 1024
             ) {
-
                 alert(
                     "Maximum file size is 10 MB."
                 );
 
+                fileInput.value = "";
+
                 return;
             }
 
-            selectedFile =
-                file;
-
-            selectedImage =
-                null;
+            selectedFile = file;
+            selectedImage = null;
 
             showAttachment(
                 file,
@@ -1351,9 +1081,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
     function showAttachment(
         file,
-        image
+        isImage
     ) {
-
         attachmentPreview.style.display =
             "block";
 
@@ -1361,65 +1090,43 @@ document.addEventListener("DOMContentLoaded", () => {
             file.name;
 
         attachmentSize.textContent =
-            formatSize(
-                file.size
-            );
+            formatSize(file.size);
 
         attachmentIcon.textContent =
-            image
+            isImage
                 ? "IMAGE"
                 : "FILE";
     }
 
-    function formatSize(
-        bytes
-    ) {
+    function formatSize(bytes) {
+        if (bytes < 1024) {
+            return `${bytes} B`;
+        }
 
         if (
             bytes <
-            1024
+            1024 * 1024
         ) {
-
             return (
-                bytes +
-                " B"
+                (bytes / 1024)
+                    .toFixed(1) +
+                " KB"
             );
         }
 
-        if (
-            bytes <
-            1024 *
-            1024
-        ) {
-
-            return (
-                bytes /
-                1024
-            ).toFixed(1) +
-            " KB";
-        }
-
         return (
-            bytes /
-            1024 /
-            1024
-        ).toFixed(1) +
-        " MB";
+            (bytes / 1024 / 1024)
+                .toFixed(1) +
+            " MB"
+        );
     }
 
     function removeSelectedFile() {
+        selectedImage = null;
+        selectedFile = null;
 
-        selectedImage =
-            null;
-
-        selectedFile =
-            null;
-
-        imageInput.value =
-            "";
-
-        fileInput.value =
-            "";
+        imageInput.value = "";
+        fileInput.value = "";
 
         attachmentPreview.style.display =
             "none";
@@ -1429,45 +1136,18 @@ document.addEventListener("DOMContentLoaded", () => {
         "click",
         removeSelectedFile
     );
-        newChatButton.addEventListener(
+
+    newChatButton.addEventListener(
         "click",
         () => {
-
-            createNewChat(
-                true
-            );
+            createNewChat(true);
         }
     );
 
     topNewChat.addEventListener(
         "click",
         () => {
-
-            createNewChat(
-                true
-            );
-        }
-    );
-
-    clearChat.addEventListener(
-        "click",
-        () => {
-
-            if (
-                !confirm(
-                    "Clear this conversation?"
-                )
-            ) {
-                return;
-            }
-
-            createNewChat(
-                true
-            );
-
-            settingsOverlay.classList.remove(
-                "show"
-            );
+            createNewChat(true);
         }
     );
 
@@ -1475,29 +1155,24 @@ document.addEventListener("DOMContentLoaded", () => {
         .querySelectorAll(
             ".suggestions button"
         )
-        .forEach(
-            button => {
+        .forEach((button) => {
+            button.addEventListener(
+                "click",
+                () => {
+                    input.value =
+                        button.dataset
+                            .prompt;
 
-                button.addEventListener(
-                    "click",
-                    () => {
+                    input.focus();
 
-                        input.value =
-                            button.dataset
-                                .prompt;
-
-                        input.focus();
-
-                        sendMessage();
-                    }
-                );
-            }
-        );
+                    sendMessage();
+                }
+            );
+        });
 
     searchChats.addEventListener(
         "input",
         () => {
-
             renderHistory(
                 searchChats.value
             );
@@ -1507,7 +1182,6 @@ document.addEventListener("DOMContentLoaded", () => {
     settingsButton.addEventListener(
         "click",
         () => {
-
             settingsOverlay.classList.add(
                 "show"
             );
@@ -1517,7 +1191,6 @@ document.addEventListener("DOMContentLoaded", () => {
     closeSettings.addEventListener(
         "click",
         () => {
-
             settingsOverlay.classList.remove(
                 "show"
             );
@@ -1526,13 +1199,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
     settingsOverlay.addEventListener(
         "click",
-        e => {
-
+        (e) => {
             if (
                 e.target ===
                 settingsOverlay
             ) {
-
                 settingsOverlay.classList.remove(
                     "show"
                 );
@@ -1543,7 +1214,6 @@ document.addEventListener("DOMContentLoaded", () => {
     themeToggle.addEventListener(
         "click",
         () => {
-
             themeToggle.classList.toggle(
                 "active"
             );
@@ -1558,7 +1228,6 @@ document.addEventListener("DOMContentLoaded", () => {
     enterToggle.addEventListener(
         "click",
         () => {
-
             enterToSend =
                 !enterToSend;
 
@@ -1583,29 +1252,26 @@ document.addEventListener("DOMContentLoaded", () => {
         savedFont;
 
     fontSizeLabel.textContent =
-        savedFont + "px";
+        `${savedFont}px`;
 
-    document.documentElement.style
-        .setProperty(
-            "--message-size",
-            savedFont + "px"
-        );
+    document.documentElement.style.setProperty(
+        "--message-size",
+        `${savedFont}px`
+    );
 
     fontSizeSlider.addEventListener(
         "input",
         () => {
-
             const size =
                 fontSizeSlider.value;
 
             fontSizeLabel.textContent =
-                size + "px";
+                `${size}px`;
 
-            document.documentElement.style
-                .setProperty(
-                    "--message-size",
-                    size + "px"
-                );
+            document.documentElement.style.setProperty(
+                "--message-size",
+                `${size}px`
+            );
 
             localStorage.setItem(
                 "jhonnyFontSize",
@@ -1617,7 +1283,6 @@ document.addEventListener("DOMContentLoaded", () => {
     mobileMenu.addEventListener(
         "click",
         () => {
-
             sidebar.classList.toggle(
                 "open"
             );
@@ -1625,7 +1290,6 @@ document.addEventListener("DOMContentLoaded", () => {
     );
 
     function logout() {
-
         localStorage.removeItem(
             "jhonnyToken"
         );
@@ -1634,14 +1298,21 @@ document.addEventListener("DOMContentLoaded", () => {
             "jhonnyUser"
         );
 
-        token =
-            null;
+        token = null;
+        currentUser = null;
 
-        currentUser =
-            null;
+        chats = [];
+        currentChat = null;
 
-        chats =
-            [];
+        conversation = [
+            {
+                role: "system",
+                content:
+                    "You are Jhonny, a helpful AI assistant. Give clear, accurate and useful answers."
+            }
+        ];
+
+        messagesContainer.innerHTML = "";
 
         showAuth();
     }
@@ -1653,42 +1324,60 @@ document.addEventListener("DOMContentLoaded", () => {
 
     messagesContainer.addEventListener(
         "click",
-        async e => {
-
+        async (e) => {
             const button =
                 e.target.closest(
                     ".code-copy-btn"
                 );
 
-            if (!button)
-                return;
+            if (!button) return;
 
             const code =
                 decodeURIComponent(
                     button.dataset.code
                 );
 
-            await navigator
-                .clipboard
-                .writeText(
+            try {
+                await navigator.clipboard.writeText(
                     code
                 );
 
-            button.textContent =
-                "Copied!";
+                button.textContent =
+                    "Copied!";
 
-            setTimeout(
-                () => {
+                setTimeout(
+                    () => {
+                        button.textContent =
+                            "Copy";
+                    },
+                    1500
+                );
 
-                    button.textContent =
-                        "Copy";
+            } catch {
+                button.textContent =
+                    "Failed";
+            }
+        }
+    );
 
-                },
-                1500
+    clearChat.addEventListener(
+        "click",
+        () => {
+            if (
+                !confirm(
+                    "Clear this conversation?"
+                )
+            ) {
+                return;
+            }
+
+            createNewChat(true);
+
+            settingsOverlay.classList.remove(
+                "show"
             );
         }
     );
 
     renderHistory();
-
 });
