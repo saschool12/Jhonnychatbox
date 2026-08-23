@@ -2,8 +2,39 @@ import { MongoClient } from "mongodb";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 
+let cachedClient = globalThis.__jhonnyMongoClient || null;
+
+async function getMongoClient(uri) {
+    if (cachedClient) {
+        return cachedClient;
+    }
+
+    const client = new MongoClient(uri, {
+        serverSelectionTimeoutMS: 8000,
+        connectTimeoutMS: 8000,
+        socketTimeoutMS: 10000,
+        maxPoolSize: 10
+    });
+
+    cachedClient = client.connect();
+
+    globalThis.__jhonnyMongoClient = cachedClient;
+
+    try {
+        await cachedClient;
+        return cachedClient;
+    } catch (error) {
+        cachedClient = null;
+        globalThis.__jhonnyMongoClient = null;
+        throw error;
+    }
+}
+
 export default async function handler(req, res) {
-    res.setHeader("Content-Type", "application/json");
+    res.setHeader(
+        "Content-Type",
+        "application/json"
+    );
 
     if (req.method !== "POST") {
         return res.status(405).json({
@@ -11,48 +42,64 @@ export default async function handler(req, res) {
         });
     }
 
-    const uri = process.env.MONGODB_URI;
-    const jwtSecret = process.env.JWT_SECRET;
+    const uri =
+        process.env.MONGODB_URI;
+
+    const jwtSecret =
+        process.env.JWT_SECRET;
 
     if (!uri) {
         return res.status(500).json({
-            error: "MONGODB_URI is not configured in Vercel."
+            error:
+                "MONGODB_URI is not configured in Vercel."
         });
     }
 
     if (!jwtSecret) {
         return res.status(500).json({
-            error: "JWT_SECRET is not configured in Vercel."
+            error:
+                "JWT_SECRET is not configured in Vercel."
         });
     }
-
-    let client;
 
     try {
         let body = req.body;
 
         if (typeof body === "string") {
-            body = JSON.parse(body);
+            try {
+                body = JSON.parse(body);
+            } catch {
+                return res.status(400).json({
+                    error:
+                        "Invalid JSON request."
+                });
+            }
         }
 
         const username =
-            String(body?.username || "").trim();
+            String(
+                body?.username || ""
+            ).trim();
 
         const password =
-            String(body?.password || "");
+            String(
+                body?.password || ""
+            );
 
         if (!username || !password) {
             return res.status(400).json({
-                error: "Username and password are required."
+                error:
+                    "Username and password are required."
             });
         }
 
-        client = new MongoClient(uri);
-
-        await client.connect();
+        const client =
+            await getMongoClient(uri);
 
         const db =
-            client.db("jhonnychatbox");
+            client.db(
+                "jhonnychatbox"
+            );
 
         const users =
             db.collection("users");
@@ -64,7 +111,15 @@ export default async function handler(req, res) {
 
         if (!user) {
             return res.status(401).json({
-                error: "Invalid username or password."
+                error:
+                    "Invalid username or password."
+            });
+        }
+
+        if (!user.password) {
+            return res.status(500).json({
+                error:
+                    "This account has no password data."
             });
         }
 
@@ -76,7 +131,8 @@ export default async function handler(req, res) {
 
         if (!valid) {
             return res.status(401).json({
-                error: "Invalid username or password."
+                error:
+                    "Invalid username or password."
             });
         }
 
@@ -100,11 +156,11 @@ export default async function handler(req, res) {
         return res.status(200).json({
             success: true,
             token: token,
-            username: user.username
+            username:
+                user.username
         });
 
     } catch (error) {
-
         console.error(
             "LOGIN ERROR:",
             error
@@ -115,13 +171,5 @@ export default async function handler(req, res) {
                 error?.message ||
                 "Login server error."
         });
-
-    } finally {
-
-        if (client) {
-            try {
-                await client.close();
-            } catch {}
-        }
     }
 }
