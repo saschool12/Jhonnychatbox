@@ -1,96 +1,269 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Jhonnychatbox</title>
-    <link rel="stylesheet" href="style.css" />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jhonny AI</title>
+    <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
 
-<!-- ===== AUTH MODAL ===== -->
 <div id="authModal" class="auth-modal">
-    <div class="auth-modal-content">
-        <h2 id="authTitle">Login</h2>
-        <div class="auth-form">
-            <input type="text" id="authUsername" placeholder="Username" required />
-            <input type="password" id="authPassword" placeholder="Password" required />
-            <button id="authSubmitBtn">Login</button>
-            <p id="authSwitchText">
-                Don't have an account? <a href="#" id="authSwitchLink">Register</a>
-            </p>
-            <div id="authError" style="color: #ff6b6b; margin-top: 10px;"></div>
-        </div>
+    <div class="auth-card">
+        <div class="auth-logo">J</div>
+        <h1 id="authTitle">Welcome back</h1>
+        <p class="auth-subtitle">Sign in to continue to Jhonny AI</p>
+
+        <input id="authUsername" type="text" placeholder="Username">
+        <input id="authPassword" type="password" placeholder="Password">
+
+        <button id="authSubmitBtn" class="auth-submit">Login</button>
+
+        <p id="authSwitchText">
+            Don't have an account?
+            <a href="#" id="authSwitchLink">Register</a>
+        </p>
+
+        <div id="authError"></div>
     </div>
 </div>
 
-<!-- ===== CHAT CONTAINER ===== -->
-<div class="chat-container">
+<div class="app" id="app">
 
-    <!-- HEADER -->
-    <header class="chat-header">
-        <img class="chat-logo" src="https://cdn-icons-png.flaticon.com/512/4712/4712130.png" alt="Jhonnychatbox" />
-        <div class="header-text">
-            <div class="header-title">Jhonnychatbox</div>
-            <div class="status">Online</div>
-        </div>
-        <div style="display:flex;align-items:center;gap:8px;">
-            <button class="settings-button" id="newChatButton" title="New Chat">➕</button>
-            <label class="burger" id="settingsButton" title="Settings">
-                <input type="checkbox" id="burgerCheckbox" />
-                <span></span>
-                <span></span>
-                <span></span>
-            </label>
-        </div>
-    </header>
+    <aside class="sidebar" id="sidebar">
 
-    <!-- SETTINGS PANEL -->
-    <div class="settings-panel" id="settingsPanel">
-        <h2>Settings</h2>
-        <div class="setting">
-            <span>Font Size</span>
-            <div style="display:flex;align-items:center;gap:8px;flex:1;justify-content:flex-end;">
+        <div class="sidebar-top">
+
+            <div class="brand">
+                <div class="brand-icon">J</div>
+                <span>Jhonny AI</span>
+            </div>
+
+            <button class="new-chat" id="newChatButton">
+                <span>+</span>
+                <span>New chat</span>
+            </button>
+
+            <div class="search-box">
+                <span>⌕</span>
+                <input id="searchChats" type="text" placeholder="Search chats">
+            </div>
+
+        </div>
+
+        <div class="history-title">Recent</div>
+
+        <div class="chat-history" id="chatHistory"></div>
+
+        <div class="sidebar-bottom">
+
+            <button class="sidebar-button" id="settingsButton">
+                <span>⚙</span>
+                <span>Settings</span>
+            </button>
+
+            <button class="sidebar-button logout" id="logoutButton">
+                <span>↪</span>
+                <span>Log out</span>
+            </button>
+
+            <div class="user-card">
+                <div class="avatar" id="userAvatar">J</div>
+                <div>
+                    <strong id="usernameDisplay">User</strong>
+                    <small>Jhonny AI</small>
+                </div>
+            </div>
+
+        </div>
+
+    </aside>
+
+    <main class="main">
+
+        <header class="topbar">
+
+            <button class="mobile-menu" id="mobileMenu">
+                ☰
+            </button>
+
+            <div class="mobile-title">
+                <div class="mini-logo">J</div>
+                <span>Jhonny AI</span>
+            </div>
+
+            <button class="top-new-chat" id="topNewChat">
+                + New chat
+            </button>
+
+        </header>
+
+        <section class="chat-area">
+
+            <div class="welcome" id="welcome">
+
+                <div class="welcome-logo">J</div>
+
+                <h1>How can I help you?</h1>
+
+                <p>
+                    Ask Jhonny anything, upload a file, or analyze an image.
+                </p>
+
+                <div class="suggestions">
+
+                    <button data-prompt="Explain this topic in simple words.">
+                        <strong>Explain something</strong>
+                        <span>Learn a topic simply</span>
+                    </button>
+
+                    <button data-prompt="Help me write this better.">
+                        <strong>Help me write</strong>
+                        <span>Improve your writing</span>
+                    </button>
+
+                    <button data-prompt="Help me solve this problem step by step.">
+                        <strong>Solve a problem</strong>
+                        <span>Work through a problem</span>
+                    </button>
+
+                    <button data-prompt="Give me some creative ideas.">
+                        <strong>Brainstorm</strong>
+                        <span>Generate new ideas</span>
+                    </button>
+
+                </div>
+
+            </div>
+
+            <div class="messages" id="chatMessages"></div>
+
+        </section>
+
+        <div class="composer-wrapper">
+
+            <div class="attachment-preview" id="attachmentPreview">
+
+                <div class="attachment-card">
+
+                    <div class="attachment-icon" id="attachmentIcon">
+                        FILE
+                    </div>
+
+                    <div class="attachment-info">
+                        <strong id="attachmentName"></strong>
+                        <span id="attachmentSize"></span>
+                    </div>
+
+                    <button id="removeAttachment">×</button>
+
+                </div>
+
+            </div>
+
+            <div class="composer">
+
+                <button class="composer-button" id="photoButton" title="Upload image">
+                    +
+                </button>
+
+                <input
+                    type="file"
+                    id="imageInput"
+                    accept="image/*"
+                    hidden
+                >
+
+                <button class="composer-button" id="fileButton" title="Upload file">
+                    📎
+                </button>
+
+                <input
+                    type="file"
+                    id="fileInput"
+                    accept=".txt,.pdf,.csv,.json,.md,.doc,.docx,.xlsx,.xls"
+                    hidden
+                >
+
+                <textarea
+                    id="userInput"
+                    rows="1"
+                    placeholder="Message Jhonny..."
+                    autocomplete="off"
+                ></textarea>
+
+                <button class="send-button" id="sendBtn">
+                    ↑
+                </button>
+
+            </div>
+
+            <div class="composer-note">
+                Jhonny can make mistakes. Check important information.
+            </div>
+
+        </div>
+
+    </main>
+
+</div>
+
+<div class="settings-overlay" id="settingsOverlay">
+
+    <div class="settings-modal">
+
+        <div class="settings-header">
+            <h2>Settings</h2>
+            <button id="closeSettings">×</button>
+        </div>
+
+        <div class="setting-row">
+            <div>
+                <strong>Dark mode</strong>
+                <span>Use the dark interface</span>
+            </div>
+
+            <button class="toggle active" id="themeToggle">
+                <span></span>
+            </button>
+        </div>
+
+        <div class="setting-row">
+            <div>
+                <strong>Enter to send</strong>
+                <span>Press Enter to send messages</span>
+            </div>
+
+            <button class="toggle active" id="enterToggle">
+                <span></span>
+            </button>
+        </div>
+
+        <div class="setting-row">
+            <div>
+                <strong>Font size</strong>
                 <span id="fontSizeLabel">16px</span>
-                <input type="range" id="fontSizeSlider" min="12" max="24" value="16" step="1" style="width:100px;" />
             </div>
+
+            <input
+                type="range"
+                id="fontSizeSlider"
+                min="13"
+                max="22"
+                value="16"
+            >
         </div>
-        <div class="setting"><span>Light Mode</span><div class="toggle" id="themeToggle"></div></div>
-        <div class="setting"><span>Enter to Send</span><div class="toggle active" id="enterToggle"></div></div>
-        <div class="setting"><span>Auto Scroll</span><div class="toggle active" id="scrollToggle"></div></div>
-        <div class="setting"><span>Messages</span><span id="messageCount">0</span></div>
-        <div class="setting"><span>Clear Chat</span><button id="clearChat">Clear</button></div>
-        <div class="setting"><span>Export Chat</span><button id="exportChat">Export</button></div>
-        <div class="setting"><span>Reset</span><button id="resetSettings">Reset</button></div>
-    </div>
 
-    <!-- MESSAGES -->
-    <main class="chat-messages" id="chatMessages"></main>
+        <button class="danger-button" id="clearChat">
+            Clear current chat
+        </button>
 
-    <!-- ATTACHMENT PREVIEW -->
-    <div class="attachment-preview" id="attachmentPreview">
-        <div class="attachment-box">
-            <div class="attachment-icon" id="attachmentIcon">📄</div>
-            <div class="attachment-info">
-                <div class="attachment-name" id="attachmentName"></div>
-                <div class="attachment-size" id="attachmentSize"></div>
-            </div>
-            <button class="remove-attachment" id="removeAttachment">×</button>
-        </div>
-    </div>
-
-    <!-- INPUT AREA -->
-    <div class="chat-input">
-        <button class="icon-button" id="photoButton" title="Upload image">📷</button>
-        <input type="file" id="imageInput" accept="image/*" />
-        <button class="icon-button" id="fileButton" title="Upload file">📎</button>
-        <input type="file" id="fileInput" accept=".txt,.pdf,.csv,.json,.md,.doc,.docx" />
-        <input type="text" id="userInput" placeholder="Message Jhonny..." autocomplete="off" />
-        <button class="send-button" id="sendBtn">Send</button>
     </div>
 
 </div>
 
 <script src="script.js"></script>
+
 </body>
 </html>
