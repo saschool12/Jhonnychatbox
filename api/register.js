@@ -1,38 +1,131 @@
-import { MongoClient } from 'mongodb';
-import bcrypt from 'bcryptjs';
-
-const uri = process.env.MONGODB_URI;
-const client = new MongoClient(uri);
+import { MongoClient } from "mongodb";
+import bcrypt from "bcryptjs";
 
 export default async function handler(req, res) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
-  }
+    res.setHeader("Content-Type", "application/json");
 
-  const { username, password } = req.body;
-
-  if (!username || !password) {
-    return res.status(400).json({ error: 'Missing username or password' });
-  }
-
-  try {
-    await client.connect();
-    const db = client.db('jhonnychatbox');
-    const users = db.collection('users');
-
-    const existing = await users.findOne({ username });
-    if (existing) {
-      return res.status(400).json({ error: 'Username already taken' });
+    if (req.method !== "POST") {
+        return res.status(405).json({
+            error: "Method not allowed"
+        });
     }
 
-    const hashedPassword = await bcrypt.hash(password, 10);
-    await users.insertOne({ username, password: hashedPassword, createdAt: new Date() });
+    const uri =
+        process.env.MONGODB_URI;
 
-    res.status(201).json({ message: 'User registered successfully' });
-  } catch (error) {
-    console.error('Registration error:', error);
-    res.status(500).json({ error: 'Internal server error' });
-  } finally {
-    await client.close();
-  }
+    if (!uri) {
+        return res.status(500).json({
+            error:
+                "MONGODB_URI is not configured in Vercel."
+        });
+    }
+
+    let client;
+
+    try {
+
+        let body = req.body;
+
+        if (typeof body === "string") {
+            body = JSON.parse(body);
+        }
+
+        const username =
+            String(
+                body?.username || ""
+            ).trim();
+
+        const password =
+            String(
+                body?.password || ""
+            );
+
+        if (!username || !password) {
+            return res.status(400).json({
+                error:
+                    "Username and password are required."
+            });
+        }
+
+        if (username.length < 3) {
+            return res.status(400).json({
+                error:
+                    "Username must be at least 3 characters."
+            });
+        }
+
+        if (password.length < 6) {
+            return res.status(400).json({
+                error:
+                    "Password must be at least 6 characters."
+            });
+        }
+
+        client =
+            new MongoClient(uri);
+
+        await client.connect();
+
+        const db =
+            client.db("jhonnychatbox");
+
+        const users =
+            db.collection("users");
+
+        const existing =
+            await users.findOne({
+                username: username
+            });
+
+        if (existing) {
+            return res.status(409).json({
+                error:
+                    "Username already taken."
+            });
+        }
+
+        const hashedPassword =
+            await bcrypt.hash(
+                password,
+                12
+            );
+
+        await users.insertOne({
+            username: username,
+
+            password:
+                hashedPassword,
+
+            createdAt:
+                new Date()
+        });
+
+        return res.status(201).json({
+            success: true,
+
+            message:
+                "Account created successfully."
+        });
+
+    } catch (error) {
+
+        console.error(
+            "REGISTER ERROR:",
+            error
+        );
+
+        return res.status(500).json({
+            error:
+                error?.message ||
+                "Registration server error."
+        });
+
+    } finally {
+
+        if (client) {
+            try {
+                await client.close();
+            } catch {}
+        }
+    }
 }
